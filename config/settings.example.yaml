@@ -1,0 +1,185 @@
+# Copy this file to `config/settings.yaml` and customize.
+# 已 gitignore `settings.yaml`，你的本地修改不会被提交。
+
+project:
+  name: local-literature-hub
+  language: zh-CN
+
+paths:
+  inbox: inbox
+  initial_sources: []
+  library_pdfs: library/pdfs
+  library_notes: library/notes
+  index_dir: library/index
+  cache_dir: library/cache
+  text_dir: library/text
+  collections_dir: collections/by_category
+
+# === AI Provider ===
+# 把要用的 provider 在下面 provider_settings 里填好 base_url / model / api_key_env，
+# 然后这里改 provider 字段切换。
+api:
+  provider: deepseek
+  base_url: https://api.deepseek.com
+  model: deepseek-chat
+  api_key_env: DEEPSEEK_API_KEY
+  temperature: 0.2
+  max_tokens: 3500
+  timeout_seconds: 120
+  thinking:
+    type: disabled
+
+codex_cli:
+  command: codex
+  model: gpt-5.4
+  sandbox: read-only
+  timeout_seconds: 180
+
+# Claude Code CLI provider — 把 Claude Code Pro/Max 订阅当 API 用。
+# 安装：npm install -g @anthropic-ai/claude-code，然后 claude login。
+# 也可在 .env 里配置 ANTHROPIC_API_KEY 走 API key 模式。
+claude_cli:
+  command: ''                    # 留空走 PATH（Win 自动用 claude.cmd）
+  model: claude-sonnet-4-5
+  timeout_seconds: 240
+
+provider_settings:
+  deepseek:
+    base_url: https://api.deepseek.com
+    model: deepseek-chat
+    api_key_env: DEEPSEEK_API_KEY
+    temperature: 0.2
+    max_tokens: 3500
+    timeout_seconds: 120
+  qwen:
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model: qwen-plus
+    api_key_env: QWEN_API_KEY
+    temperature: 0.2
+    max_tokens: 3500
+    timeout_seconds: 120
+  openai_compatible:
+    base_url: ''
+    model: ''
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.2
+    max_tokens: 3500
+    timeout_seconds: 120
+
+# === 翻译 ===
+translation:
+  provider: ollama        # ollama | openai_compatible
+  ollama:
+    base_url: http://127.0.0.1:11434
+    model: qwen2.5:14b
+    timeout_seconds: 120
+  openai_compatible:
+    base_url: https://api.deepseek.com
+    model: deepseek-chat
+    api_key_env: DEEPSEEK_API_KEY
+    timeout_seconds: 90
+
+# === EasyScholar 期刊等级（可选） ===
+# secret key 在 https://www.easyscholar.cc/ 的「开放接口」注册后获取。
+# enabled_fields 决定要把 EasyScholar 哪些字段拼到「期刊等级_自动」里。
+easyscholar:
+  enabled: true
+  api_key_env: EASYSCHOLAR_SECRET_KEY
+  enabled_fields:
+    - sciUp
+    - sci
+    - ssci
+    - ahci
+    - eii
+    - esi
+    - fms
+    - utd24
+    - ajg
+    - cssci
+
+# === PDF 文本抽取 ===
+# max_input_chars：「整理新文献」快速扫描用（前 N + 后 M 页）。
+# max_full_chars：AI 问答用，读全文每一页的上限（≈ 一整篇论文）。
+pdf:
+  quick_first_pages: 10
+  quick_last_pages: 4
+  max_input_chars: 28000
+  max_full_chars: 120000
+  image_dpi: 150
+  max_image_pages: 6
+
+# === 扫描件 OCR fallback ===
+# PDF 抽出的文字 < trigger_threshold 时自动 OCR 后再喂 AI。
+# 默认 rapidocr-onnxruntime（pip 装好就用，模型已打包）。
+ocr:
+  enabled: true
+  engine: rapidocr           # rapidocr | easyocr | cloud | none
+  trigger_threshold: 500
+  max_pages: 30
+  easyocr_langs:
+    - ch_sim
+    - en
+  cloud:                     # engine=cloud 时用；填一个 OpenAI 兼容的视觉接口
+    base_url: ''
+    model: ''
+    api_key_env: ''
+    timeout_seconds: 90
+
+# === 视觉模型 ===
+# AI 问答附带 PDF 页面图片时（在 AI 面板填页码 + 勾选「加图」）走的 provider。
+# 主模型保持文本，视觉单独走 → 节省 token + 主模型不必支持视觉。
+vision:
+  provider: qwen_vl          # qwen_vl | openai_vision | claude_cli
+  qwen_vl:
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model: qwen-vl-plus      # 也可填 qwen-vl-max
+    api_key_env: QWEN_API_KEY
+    timeout_seconds: 90
+  openai_vision:
+    base_url: https://api.openai.com/v1
+    model: gpt-4o-mini       # 也可填 gpt-4o
+    api_key_env: OPENAI_API_KEY
+    timeout_seconds: 90
+  claude_cli: {}             # 复用顶层 claude_cli 配置
+
+# === 追踪期刊（list.xlsx） ===
+tracking_journals:
+  path: list.xlsx
+  sheet: SSCI_Q1_扩展初筛
+
+# === 整理产物命名 ===
+rename:
+  pattern: '{year}_{first_author}_{short_title}'
+  max_short_title_chars: 72
+
+# === 总索引 papers.csv / papers.xlsx ===
+index:
+  csv: library/index/papers.csv
+  xlsx: library/index/papers.xlsx
+  # 这些字段在重整时不会被 AI 覆盖
+  preserve_manual_fields:
+    - 一级分类
+    - 二级分类
+    - 三级分类
+    - 人工分类
+    - 最终分类
+    - 重要性
+    - 阅读状态
+    - 我的备注
+    - 期刊等级_人工
+
+# === 三级分类体系（按自己需要改） ===
+# 结构：{一级名: {二级名: [三级名, ...]}}
+# 兼容旧格式（一级名: [二级, 二级]）。建议为每个一级用"代号 + 中文名"以便排序。
+classification:
+  custom_categories: []
+  primary_categories:
+    C01 示例主题一:
+      子主题A:
+        - 细分A1
+        - 细分A2
+      子主题B: []
+    C02 示例主题二:
+      子主题C: []
+    未归类中:
+      - 待人工分类

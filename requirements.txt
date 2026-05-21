@@ -1,0 +1,19 @@
+# 本地文献工作台 · Python 依赖
+# 装一遍：pip install -r requirements.txt
+# 推荐先建虚拟环境：python3 -m venv .venv && source .venv/bin/activate
+
+PyYAML>=6.0            # 解析 config/settings.yaml
+requests>=2.31         # 调 AI / EasyScholar / 翻译 API
+openpyxl>=3.1          # papers.xlsx 总表 + list.xlsx 追踪表
+PyMuPDF>=1.24          # PDF 文本抽取（organize.py）；不装也能跑大部分功能，但「整理新文献」会失败
+pypdf>=4.0             # 兼容性 PDF 文本抽取（fallback；早于 PyMuPDF）
+
+# ============================================================
+# 可选：扫描件 OCR fallback
+# 当 PDF 是扫描件（提取出的文本太少 < 500 字）时自动用 OCR 引擎识别文字。
+# 不装这两个包工作台仍能运行——只是遇到扫描件会跳过。
+# 默认引擎：rapidocr-onnxruntime（模型内置，~50MB，纯 pip 跨平台）
+# 如果中文精度要求更高，可以另装 easyocr / paddleocr，在设置里切换。
+# ============================================================
+rapidocr-onnxruntime>=1.2  # OCR 引擎（默认）；模型已打包，无需联网下载
+Pillow>=10.0               # 渲染 PDF 页面为图片（OCR 输入）；PyMuPDF 自带也行

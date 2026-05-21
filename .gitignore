@@ -1,0 +1,82 @@
+# === 个人数据，绝不上传 ===
+.env
+API_KEYS.md
+检索词体系_Google_Scholar.md
+
+# === 配置：ship .example 模板，不 ship live ===
+config/settings.yaml
+list.xlsx
+config/settings.yaml.bak
+
+# === 数据目录：保留目录结构（.gitkeep），不传内容 ===
+inbox/*
+!inbox/.gitkeep
+
+library/pdfs/*
+!library/pdfs/.gitkeep
+
+library/notes/*
+!library/notes/.gitkeep
+
+library/text/*
+!library/text/.gitkeep
+
+library/cache/**
+!library/cache/.gitkeep
+
+library/stickies/*
+!library/stickies/.gitkeep
+
+library/chat_history/*
+!library/chat_history/.gitkeep
+
+library/annotations/*
+!library/annotations/.gitkeep
+
+library/index/*
+!library/index/.gitkeep
+
+library/_removed_*/
+
+# 用户写作目录
+citations/*.md
+!citations/.gitkeep
+manuscript_v/*
+
+# 临时材料
+collections/by_category/*
+!collections/by_category/.gitkeep
+exports/*
+!exports/.gitkeep
+.local/
+_*.log
+_*.err
+_out.txt
+
+# === 打包的 Python 依赖（用户应该自己 pip install） ===
+.deps/
+.deps_macos/
+.deps_windows/
+.deps_linux/
+
+# === PDF.js 历史遗留 vendor（当前 pdf_viewer.js 用 iframe，不再依赖 PDF.js）===
+# 如未来切回 PDF.js 渲染，从 https://github.com/mozilla/pdf.js/releases 解压后放回
+web/vendor/pdfjs/
+
+# === Python / OS / IDE 噪音 ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# === server 运行时产物 ===
+.server.log
+.server.err
+
+# === 任何个人记忆 / 笔记 ===
+.claude/

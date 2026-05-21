@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>文献工作台</title>
+    <link rel="stylesheet" href="/web/styles.css" />
+    <link rel="stylesheet" href="/web/styles-features.css" />
+    <link rel="stylesheet" href="/web/styles-design.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+
+      <!-- ========================================================
+           TOP BAR — consolidated: primary action + split-cite + overflow + gear.
+           Per-paper actions (帮我阅读/刷新等级) move to reader-actions.
+           ======================================================== -->
+      <header class="topbar">
+        <div class="brand">
+          <strong>文献工作台</strong>
+          <span id="modelLabel">加载中</span>
+        </div>
+        <div class="top-actions">
+          <button id="organizeBtn" class="primary" title="整理 inbox 中的新 PDF">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9.5V12a1 1 0 001 1h8a1 1 0 001-1V9.5"/><path d="M8 2v8m0 0L5 7m3 3l3-3"/></svg>
+            整理新文献
+          </button>
+
+          <span class="help-cite-wrap" id="helpCiteWrap">
+            <button id="helpCiteBtn" disabled title="基于当前文献和选中的 citation 写作上下文，生成一条引用记录">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13l3.5-3.5L9 12l4-6"/><path d="M10 6h3v3"/></svg>
+              帮我引用
+            </button>
+            <select id="helpCiteSelect" disabled title="选择引用要追加到的 citation 文件">
+              <option value="">加载中…</option>
+            </select>
+          </span>
+
+          <span class="overflow-wrap">
+            <button id="overflowBtn" class="btn-icon" title="更多操作">
+              <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="13" cy="8" r="1.4"/></svg>
+            </button>
+            <div id="overflowMenu" class="overflow-menu">
+              <button id="scanRefreshBtn" title="识别并标记扫描版 PDF">
+                <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5"/><path d="M8 5v3l2 2"/></svg></span>
+                刷新扫描标记
+              </button>
+              <button id="refreshRankAllBtn" title="批量查询所有文献的期刊等级（仅查空缺）">
+                <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l3-3 3 3 4-5"/><path d="M9 6h4v4"/></svg></span>
+                批量刷新等级
+              </button>
+              <button id="exportCategoryBtn" title="按分类导出 PDF + 笔记">
+                <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/><path d="M3 7h10"/></svg></span>
+                按分类导出
+              </button>
+              <div class="menu-sep"></div>
+              <a class="button-link" href="/file?path=library/index/papers.xlsx" target="_blank" rel="noreferrer" style="border:none;background:transparent;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13px;width:100%;text-align:left;">
+                <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/></svg></span>
+                打开总表 (xlsx)
+              </a>
+            </div>
+          </span>
+
+          <button id="settingsBtn" class="btn-icon" title="设置">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <button id="sidebarToggle" class="sidebar-toggle" title="折叠/展开左侧列表" type="button">‹</button>
+
+      <main class="workspace">
+
+        <!-- ========================================================
+             SIDEBAR — search + filter pills + paper list
+             ======================================================== -->
+        <aside class="sidebar">
+          <div class="search-row">
+            <span class="search-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4"/><path d="M10 10l3 3"/></svg>
+            </span>
+            <input id="searchInput" type="search" placeholder="搜索标题、作者、关键词" />
+            <span class="kbd-hint">/</span>
+          </div>
+          <div class="filter-stack">
+            <select id="categorySelect" title="按分类筛选">
+              <option value="">全部分类</option>
+              <option value="__uncategorized">未分类</option>
+              <option value="__only_ai">仅 AI 建议</option>
+            </select>
+            <select id="readStatusFilter" title="按阅读状态筛选">
+              <option value="">全部状态</option>
+              <option value="__blank">未定</option>
+              <option value="AI初整">未读</option>
+              <option value="待读">待读</option>
+              <option value="已读">已读</option>
+              <option value="精读">精读</option>
+            </select>
+            <select id="importanceFilter" title="按重要性筛选">
+              <option value="">全部重要性</option>
+              <option value="__blank">未定</option>
+              <option value="5">★5</option>
+              <option value="4">★4</option>
+              <option value="3">★3</option>
+              <option value="2">★2</option>
+              <option value="1">★1</option>
+            </select>
+            <select id="sortSelect" title="排序方式">
+              <option value="added:desc">最近添加 ↓</option>
+              <option value="added:asc">最早添加 ↑</option>
+              <option value="year:desc">年份 新→旧</option>
+              <option value="year:asc">年份 旧→新</option>
+              <option value="importance:desc">重要性 高→低</option>
+              <option value="importance:asc">重要性 低→高</option>
+              <option value="read_status:asc">状态 待读→已读</option>
+              <option value="read_status:desc">状态 已读→待读</option>
+            </select>
+          </div>
+          <div id="paperCount" class="muted"></div>
+          <div id="paperList" class="paper-list"></div>
+        </aside>
+
+        <!-- ========================================================
+             READER — paper title + per-paper actions + PDF
+             ======================================================== -->
+        <section class="reader">
+          <div class="reader-head">
+            <div>
+              <h1 id="paperTitle">选择一篇文献</h1>
+              <p id="paperMeta" class="muted"></p>
+              <p id="paperVenueLine" class="paper-venue-line"></p>
+              <div id="paperRankLine" class="paper-rank-line"></div>
+            </div>
+            <div class="reader-actions">
+              <button id="helpReadBtn" disabled title="AI 重读当前文献 → 刷新元数据 + 笔记">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8a6 6 0 1110 4"/><path d="M12 9.5V13h-3.5"/></svg>
+                帮我阅读
+              </button>
+              <button id="refreshRankBtn" disabled title="用 EasyScholar 查询期刊等级">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l3-3 3 3 4-5"/><path d="M9 6h4v4"/></svg>
+                刷新等级
+              </button>
+              <a id="openPdfLink" class="button-link" target="_blank" rel="noreferrer" title="在新窗口打开 PDF">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h4v4"/><path d="M13 3l-6 6"/><path d="M3 5v8h8v-3"/></svg>
+                新窗口
+              </a>
+              <button id="deletePaperBtn" class="danger" type="button" disabled title="删除当前文献">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5h10M6 4.5V3h4v1.5M5 4.5l1 8h4l1-8"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="reader-toolbar">
+            <span>选中 PDF 文字 → 按 <span class="kbd">⌘C</span> 复制 → 点右侧</span>
+            <div class="toolbar-spacer"></div>
+            <button id="translateClipboardBtn" type="button" title="读剪贴板内容并翻译">翻译剪贴板</button>
+          </div>
+          <div id="pdfViewer" class="pdfv-container"></div>
+          <div id="textReader" class="text-reader hidden">
+            <div id="textReaderStatus" class="muted">加载文本中</div>
+            <div id="textReaderContent"></div>
+          </div>
+        </section>
+
+        <!-- ========================================================
+             INSPECTOR — tabs: 笔记 / 便签 / AI / 摘抄 / 分类
+             ======================================================== -->
+        <aside class="inspector">
+          <div class="tabs" id="inspectorTabs">
+            <button class="tab active" data-tab="note">笔记</button>
+            <button class="tab" data-tab="annot">便签</button>
+            <button class="tab" data-tab="ai">AI</button>
+            <button class="tab" data-tab="excerpt">摘抄</button>
+            <button class="tab" data-tab="meta">分类</button>
+          </div>
+
+          <!-- ============ 笔记 ============ -->
+          <section id="notePanel" class="panel active">
+            <div class="note-header">
+              <div class="seg">
+                <button id="previewBtn" class="active" type="button">预览</button>
+                <button id="editBtn" type="button">编辑</button>
+              </div>
+              <span class="save-status" id="noteSaveStatus">
+                <span class="dot"></span>
+                已自动保存
+              </span>
+              <button id="saveNoteBtn" type="button" style="display:none">保存笔记</button>
+            </div>
+            <textarea id="noteEditor" class="hidden" spellcheck="false"></textarea>
+            <div id="notePreview" class="note-preview"></div>
+          </section>
+
+          <!-- ============ 便签 ============ -->
+          <section id="annotPanel" class="panel">
+            <div class="panel-actions">
+              <span id="stickyPanelCount" class="muted">0 条便签</span>
+              <span class="muted" style="margin-left:auto;font-size:11px">便签保存在 library/stickies/{paper_id}.json</span>
+            </div>
+            <div class="sticky-new">
+              <textarea id="stickyNewInput" placeholder="给当前文献写一条便签…（支持 Markdown）" spellcheck="false"></textarea>
+              <div class="sticky-new-actions">
+                <div class="sticky-color-row" id="stickyColorRow">
+                  <button class="color-dot active" data-color="clay" title="陶土橘" type="button"></button>
+                  <button class="color-dot" data-color="yellow" title="黄" type="button"></button>
+                  <button class="color-dot" data-color="green" title="绿" type="button"></button>
+                  <button class="color-dot" data-color="blue" title="蓝" type="button"></button>
+                  <button class="color-dot" data-color="pink" title="粉" type="button"></button>
+                </div>
+                <button id="stickyAddBtn" class="primary" type="button" disabled style="margin-left:auto">添加便签</button>
+                <span id="stickyStatus" class="muted"></span>
+              </div>
+            </div>
+            <div id="stickyList" class="sticky-list"></div>
+          </section>
+
+          <!-- ============ AI ============ -->
+          <section id="aiPanel" class="panel">
+            <div class="ai-context-row">
+              <label class="inline-field" title="把某个 citation 文件顶部的「写作上下文」加进 AI 提示词">
+                <span>当前工作语境</span>
+                <select id="aiWorkContext">
+                  <option value="">无 — 只基于这篇文献</option>
+                </select>
+              </label>
+              <details class="quick-prompts-wrap">
+                <summary>快捷提示词</summary>
+                <div class="quick-prompts">
+                  <button data-prompt="请基于这篇文献，补充一版更适合放入博士论文文献综述的结构化笔记。" type="button">综述笔记</button>
+                  <button data-prompt="请提取这篇文献中最适合作为论文论据的可引用观点，并说明可放入哪一章或哪一节。" type="button">可引用点</button>
+                  <button data-prompt="请重新判断这篇文献在我的分类体系中的位置，给出一级分类、二级分类和理由。" type="button">分类建议</button>
+                  <button data-prompt="请说明这篇文献与我的博士论文主题 AI/LLM 同行评议 的关系，分为强相关、中相关、弱相关，并解释原因。" type="button">相关性</button>
+                </div>
+              </details>
+            </div>
+
+            <div class="chat-toolbar">
+              <span class="muted" id="chatHistoryStatus">尚无对话</span>
+              <label class="checkline" title="开启后每次发送会带上之前的对话"><input id="chatUseHistory" type="checkbox" checked /> 多轮上下文</label>
+              <button id="clearChatBtn" class="secondary danger" type="button" disabled>清空对话</button>
+            </div>
+            <div id="chatHistory" class="chat-history"></div>
+
+            <textarea id="questionInput" placeholder="问当前文献，比如：这篇文章能支撑我论文哪一部分？也可以追问。"></textarea>
+            <div class="image-ask-row">
+              <button id="imageAskOpenBtn" class="secondary" type="button">按页读图</button>
+              <span id="imageAskSummary" class="muted">未启用</span>
+            </div>
+            <button id="askBtn" type="button">发送给 AI</button>
+            <div id="aiStatus" class="muted"></div>
+            <div id="aiAnswer" class="ai-answer hidden"></div>
+            <details class="append-to-note">
+              <summary>把回答追加到笔记</summary>
+              <label>
+                追加标题
+                <input id="appendTitle" value="AI 问答记录" />
+              </label>
+              <label>
+                可编辑后追加到笔记
+                <textarea id="appendContent" placeholder="AI 回答会出现在这里，也可以自己写内容再追加。"></textarea>
+              </label>
+              <button id="appendNoteBtn" class="secondary" type="button">追加到 Markdown 笔记</button>
+            </details>
+          </section>
+
+          <!-- ============ 好句摘抄 ============ -->
+          <section id="excerptPanel" class="panel">
+            <div class="panel-actions">
+              <button id="excerptBtn" type="button" class="primary">从当前文献摘抄好句</button>
+              <a class="button-link ghost" href="/file?path=library/index/english_excerpts.md" target="_blank" rel="noreferrer">.md 全库</a>
+              <span id="excerptStatus" class="muted"></span>
+            </div>
+            <div class="muted excerpt-hint">AI 会从当前 PDF 中挑 6-8 条值得直接引用的英文原句，附上中文用法说明，自动追加到 <code>library/index/english_excerpts.md</code>。</div>
+            <div id="excerptResult" class="ai-answer hidden"></div>
+          </section>
+
+          <!-- ============ 分类 / 元数据 ============
+               New section order: 标题与作者 → 分类路径 → 状态 → 期刊 → 备注
+               Underlying selects (importance, readStatus) kept for app.js compat;
+               status-seg + stars visually replace them, wiring is in app.js patch.
+               ============ -->
+          <section id="metaPanel" class="panel">
+            <form class="meta-panel-form" onsubmit="return false">
+
+              <!-- Section 1: 标题与作者 -->
+              <div class="meta-section">
+                <div class="meta-section-head">标题与作者</div>
+                <div class="meta-row-2">
+                  <div class="meta-field full">
+                    <label for="titleEn">英文标题</label>
+                    <input id="titleEn" type="text" />
+                  </div>
+                  <div class="meta-field full">
+                    <label for="titleZh">中文标题</label>
+                    <input id="titleZh" type="text" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 2: 分类路径 -->
+              <div class="meta-section">
+                <div class="meta-section-head">分类路径</div>
+                <button id="classificationBox" class="classification-box empty" type="button">
+                  <span>分类</span>
+                  <strong id="classificationSummary">未设置</strong>
+                  <small id="classificationHint">点击选择或管理一级/二级分类</small>
+                </button>
+              </div>
+
+              <!-- Section 3: 状态 — 重要性 (stars) + 阅读状态 (segmented) -->
+              <div class="meta-section">
+                <div class="meta-section-head">状态</div>
+                <div class="meta-row-2">
+                  <div class="meta-field">
+                    <label for="importance">重要性</label>
+                    <div class="stars" id="importanceStars" data-target="importance" role="radiogroup">
+                      <button type="button" class="star" data-value="1">★</button>
+                      <button type="button" class="star" data-value="2">★</button>
+                      <button type="button" class="star" data-value="3">★</button>
+                      <button type="button" class="star" data-value="4">★</button>
+                      <button type="button" class="star" data-value="5">★</button>
+                      <span class="star-meta" id="importanceStarsMeta">未定</span>
+                    </div>
+                    <select id="importance" class="hidden">
+                      <option value="">未定</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                    </select>
+                  </div>
+                  <div class="meta-field">
+                    <label for="readStatus">阅读状态</label>
+                    <div class="status-seg" id="readStatusSeg" data-target="readStatus" role="radiogroup">
+                      <button type="button" data-value="AI初整">未读</button>
+                      <button type="button" data-value="待读">待读</button>
+                      <button type="button" data-value="已读">已读</button>
+                      <button type="button" data-value="精读">精读</button>
+                    </div>
+                    <select id="readStatus" class="hidden">
+                      <option value="">未定</option>
+                      <option value="AI初整">未读</option>
+                      <option value="待读">待读</option>
+                      <option value="已读">已读</option>
+                      <option value="精读">精读</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 4: 期刊与等级 -->
+              <div class="meta-section">
+                <div class="meta-section-head">期刊与等级</div>
+                <div class="meta-row-2">
+                  <div class="meta-field full">
+                    <label for="venue">期刊 / 会议</label>
+                    <input id="venue" type="text" />
+                  </div>
+                  <div class="meta-field full">
+                    <label for="journalQuartile">期刊分区</label>
+                    <input id="journalQuartile" type="text" placeholder="例如 JCR Q1 / 中科院一区 / ABS 4" />
+                  </div>
+                  <div class="meta-field full">
+                    <label for="journalRankManual">期刊等级（人工） <span class="opt-tag">永不被自动刷新覆盖</span></label>
+                    <input id="journalRankManual" type="text" placeholder="留空则显示 EasyScholar 查到的「期刊等级_自动」" />
+                  </div>
+                  <div class="meta-field full">
+                    <div id="journalRankAuto" class="muted" style="font-size:11px">EasyScholar 自动等级：—</div>
+                  </div>
+                  <div class="meta-field full">
+                    <label>领域标识</label>
+                    <div class="flag-grid">
+                      <label class="checkline"><input id="flagSSCI" type="checkbox" /> SSCI</label>
+                      <label class="checkline"><input id="flagSCI" type="checkbox" /> SCI</label>
+                      <label class="checkline"><input id="flagUTD" type="checkbox" /> UTD</label>
+                      <label class="checkline"><input id="flagFT50" type="checkbox" /> FT50</label>
+                      <label class="checkline"><input id="flagABS" type="checkbox" /> ABS</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 5: 我的备注 -->
+              <div class="meta-section">
+                <div class="meta-section-head">我的备注</div>
+                <div class="meta-field">
+                  <textarea id="myRemark" rows="3"></textarea>
+                </div>
+              </div>
+
+              <!-- Save row -->
+              <div class="panel-actions" style="padding-top:6px;border-top:1px solid var(--line-soft)">
+                <button id="saveMetaBtn" class="primary" type="button">保存分类</button>
+                <span id="metaSaveStatus" class="muted"></span>
+              </div>
+
+              <!-- AI raw metadata, collapsed -->
+              <details>
+                <summary class="muted" style="font-size:11px;cursor:pointer;padding:4px 0">▸ AI 提取的原始元数据</summary>
+                <dl id="aiMeta" class="meta-list"></dl>
+              </details>
+            </form>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <datalist id="categoryOptions"></datalist>
+
+    <!-- ============================================================
+         Settings modal (Phase 1: same tab structure, restyled)
+         ============================================================ -->
+    <div id="settingsModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2>设置</h2>
+          <button id="closeSettingsBtn" class="secondary" type="button">关闭</button>
+        </div>
+        <div class="settings-tabs" id="settingsTabs">
+          <button data-settings-tab="model" type="button">模型</button>
+          <button data-settings-tab="translation" type="button">翻译</button>
+          <button data-settings-tab="ocr" type="button">OCR</button>
+          <button data-settings-tab="vision" type="button">视觉模型</button>
+          <button data-settings-tab="easyscholar" type="button">期刊等级源</button>
+          <button data-settings-tab="citations" type="button">Citation</button>
+          <button data-settings-tab="ui" type="button">界面</button>
+          <button data-settings-tab="prompts" type="button">提示词</button>
+          <button data-settings-tab="journals" type="button">期刊库</button>
+        </div>
+
+        <section id="modelSettingsSection" class="settings-section">
+          <div class="provider-tabs" id="providerTabs">
+            <button data-provider="deepseek" type="button">DeepSeek</button>
+            <button data-provider="qwen" type="button">Qwen</button>
+            <button data-provider="openai_compatible" type="button">OpenAI 兼容</button>
+            <button data-provider="codex_cli" type="button">Codex CLI</button>
+            <button data-provider="claude_cli" type="button">Claude CLI</button>
+          </div>
+          <div class="provider-panel" data-provider-panel="deepseek">
+            <label>Base URL <input id="deepseekBaseUrl" /></label>
+            <label>模型 <input id="deepseekModel" /></label>
+            <label>API Key 环境变量 <input id="deepseekKeyEnv" /></label>
+            <label>写入/更新 API Key <input id="deepseekApiKey" type="password" placeholder="留空不修改 .env" /></label>
+          </div>
+          <div class="provider-panel hidden" data-provider-panel="qwen">
+            <label>Base URL <input id="qwenBaseUrl" /></label>
+            <label>模型 <input id="qwenModel" /></label>
+            <label>API Key 环境变量 <input id="qwenKeyEnv" /></label>
+            <label>写入/更新 API Key <input id="qwenApiKey" type="password" placeholder="留空不修改 .env" /></label>
+          </div>
+          <div class="provider-panel hidden" data-provider-panel="openai_compatible">
+            <label>Base URL <input id="openaiCompatibleBaseUrl" placeholder="例如 http://127.0.0.1:11434/v1" /></label>
+            <label>模型 <input id="openaiCompatibleModel" /></label>
+            <label>API Key 环境变量 <input id="openaiCompatibleKeyEnv" /></label>
+            <label>写入/更新 API Key <input id="openaiCompatibleApiKey" type="password" placeholder="留空不修改 .env" /></label>
+          </div>
+          <div class="provider-panel hidden" data-provider-panel="codex_cli">
+            <label>Codex CLI 路径 <input id="codexCommand" /></label>
+            <label>Codex 模型 <input id="codexModel" placeholder="默认 gpt-5.4" /></label>
+            <label>Codex 沙盒
+              <select id="codexSandbox">
+                <option value="read-only">read-only</option>
+                <option value="workspace-write">workspace-write</option>
+              </select>
+            </label>
+            <label>超时秒数 <input id="codexTimeout" type="number" min="30" step="30" /></label>
+            <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+              安装：<code>brew install codex</code>（macOS） 或下载 Codex.app；首次使用先在终端跑一次 <code>codex login</code>。<br>
+              路径示例：macOS <code>/Applications/Codex.app/Contents/Resources/codex</code>；Windows <code>codex.cmd</code>（在 PATH 中可省略全路径）。
+            </p>
+          </div>
+          <div class="provider-panel hidden" data-provider-panel="claude_cli">
+            <label>Claude CLI 路径 <input id="claudeCommand" placeholder="默认 claude（Win 自动用 claude.cmd）" /></label>
+            <label>Claude 模型 <input id="claudeModel" placeholder="默认 claude-sonnet-4-5" /></label>
+            <label>超时秒数 <input id="claudeTimeout" type="number" min="30" step="30" placeholder="默认 240" /></label>
+            <label>写入/更新 ANTHROPIC_API_KEY <input id="claudeApiKey" type="password" placeholder="留空不修改 .env；走 claude login 也可以不填" /></label>
+            <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+              安装：<code>npm install -g @anthropic-ai/claude-code</code>；首次使用先在终端运行 <code>claude login</code>（推荐，免管理 key）。<br>
+              或者：把 <code>ANTHROPIC_API_KEY</code> 填到上面，会写入 <code>.env</code>，CLI 会自动读取。<br>
+              路径示例：macOS/Linux <code>claude</code>；Windows <code>claude.cmd</code>（在 PATH 中可省略全路径）。<br>
+              模型示例：<code>claude-sonnet-4-5</code>、<code>claude-opus-4-1</code>、<code>claude-haiku-4-5</code>。
+            </p>
+          </div>
+          <div class="panel-actions">
+            <button id="saveSettingsBtn" type="button">保存模型设置</button>
+            <span id="settingsStatus" class="muted"></span>
+          </div>
+        </section>
+
+        <section id="translationSettingsSection" class="settings-section hidden">
+          <div class="provider-tabs" id="translationProviderTabs">
+            <button data-trans-provider="ollama" type="button">本地 Ollama</button>
+            <button data-trans-provider="openai_compatible" type="button">OpenAI 兼容接口</button>
+          </div>
+          <div class="provider-panel" data-trans-panel="ollama">
+            <label>Ollama Base URL <input id="translationOllamaUrl" placeholder="例如 http://127.0.0.1:11434" /></label>
+            <label>翻译模型 <input id="translationOllamaModel" placeholder="例如 qwen3:14b / llama3:8b" /></label>
+            <label>超时秒数 <input id="translationOllamaTimeout" type="number" min="10" step="10" /></label>
+            <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+              本地部署，零成本。Mac 上 <code>brew services start ollama</code> 启动；Windows 用<a href="https://ollama.com/download" target="_blank" rel="noreferrer">官方安装器</a>。<br>
+              如果在另一台机器跑了 Ollama，填那台机器的 LAN 地址，例如 <code>http://192.168.1.100:11434</code>。
+            </p>
+          </div>
+          <div class="provider-panel hidden" data-trans-panel="openai_compatible">
+            <label>Base URL <input id="translationOpenaiUrl" placeholder="例如 https://api.deepseek.com" /></label>
+            <label>翻译模型 <input id="translationOpenaiModel" placeholder="例如 deepseek-chat / qwen-plus" /></label>
+            <label>API Key 环境变量 <input id="translationOpenaiKeyEnv" placeholder="例如 DEEPSEEK_API_KEY" /></label>
+            <label>写入/更新 API Key <input id="translationOpenaiApiKey" type="password" placeholder="留空不修改 .env" /></label>
+            <label>超时秒数 <input id="translationOpenaiTimeout" type="number" min="10" step="10" /></label>
+            <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+              · DeepSeek：<code>https://api.deepseek.com</code> + <code>deepseek-chat</code><br>
+              · Qwen：<code>https://dashscope.aliyuncs.com/compatible-mode/v1</code> + <code>qwen-plus</code><br>
+              · OpenAI：<code>https://api.openai.com/v1</code> + <code>gpt-4o-mini</code>
+            </p>
+          </div>
+          <div class="field-title" style="margin-top:10px">翻译快捷键</div>
+          <label>快捷键
+            <input id="translateShortcutInput" readonly placeholder="点这里，然后按下你想用的组合键"
+                   style="cursor:pointer" />
+          </label>
+          <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+            点上面输入框，按一组键（如 <code>Alt+T</code> / <code>Ctrl+Q</code>）即可设为「翻译」快捷键。<br>
+            选中网页里的文字后按快捷键直接翻译；PDF 里的文字仍需先 Ctrl+C。留空 = 不启用快捷键。
+          </p>
+
+          <div class="panel-actions">
+            <button id="saveTranslationBtn" type="button">保存翻译设置</button>
+            <button id="clearTranslateShortcutBtn" type="button" class="secondary">清除快捷键</button>
+            <span id="translationStatus" class="muted"></span>
+          </div>
+        </section>
+
+        <section id="ocrSettingsSection" class="settings-section hidden">
+          <p class="muted" style="font-size:12px;line-height:1.55;margin:0">
+            扫描件 OCR fallback：当 PDF 抽出的文本太少（少于「触发阈值」字符）或被启发式判定为扫描件时，自动用 OCR 引擎识别每页文字。<br>
+            结果缓存在 <code>library/text/{hash}.ocr.txt</code>，删除该文件可强制重新 OCR。
+          </p>
+          <label class="checkline"><input id="ocrEnabled" type="checkbox" /> 启用 OCR fallback</label>
+          <label>OCR 引擎
+            <select id="ocrEngine">
+              <option value="rapidocr">RapidOCR (推荐，~50MB，纯 pip)</option>
+              <option value="easyocr">EasyOCR (需 PyTorch，~350MB)</option>
+              <option value="cloud">云 OCR（自配视觉接口）</option>
+              <option value="none">关闭 OCR</option>
+            </select>
+          </label>
+          <div id="ocrAvailHint" class="muted" style="grid-column:1/-1;font-size:11.5px;line-height:1.5;margin-top:-6px"></div>
+          <label>触发阈值（字符数） <input id="ocrTriggerThreshold" type="number" min="100" step="100" placeholder="500" /></label>
+          <label>最多 OCR 页数 <input id="ocrMaxPages" type="number" min="1" max="200" step="1" placeholder="30" /></label>
+
+          <details style="grid-column:1/-1;margin-top:8px">
+            <summary style="cursor:pointer;font-size:12px;color:var(--text-soft,#6b6660)">云 OCR 配置（仅当引擎=云 OCR 时）</summary>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <label>Base URL <input id="ocrCloudBaseUrl" placeholder="例如 https://dashscope.aliyuncs.com/compatible-mode/v1" /></label>
+              <label>模型 <input id="ocrCloudModel" placeholder="例如 qwen-vl-plus / gpt-4o-mini" /></label>
+              <label>API Key 环境变量 <input id="ocrCloudKeyEnv" placeholder="例如 QWEN_API_KEY" /></label>
+              <label>写入/更新 API Key <input id="ocrCloudApiKey" type="password" placeholder="留空不修改 .env" /></label>
+              <label>超时秒数 <input id="ocrCloudTimeout" type="number" min="30" step="30" placeholder="90" /></label>
+            </div>
+            <p class="muted" style="font-size:11px;line-height:1.55;margin-top:8px">
+              云 OCR 走任意 OpenAI 兼容的视觉接口。常用：<br>
+              · 阿里通义千问 VL：<code>https://dashscope.aliyuncs.com/compatible-mode/v1</code> + <code>qwen-vl-plus</code><br>
+              · 火山豆包 OCR：参 <a href="https://www.volcengine.com/docs/82379" target="_blank" rel="noreferrer">火山文档</a><br>
+              · OpenAI GPT-4o-mini：<code>https://api.openai.com/v1</code> + <code>gpt-4o-mini</code>
+            </p>
+          </details>
+
+          <div class="panel-actions">
+            <button id="saveOcrBtn" type="button">保存 OCR 设置</button>
+            <span id="ocrStatus" class="muted"></span>
+          </div>
+        </section>
+
+        <section id="visionSettingsSection" class="settings-section hidden">
+          <p class="muted" style="font-size:12px;line-height:1.55;margin:0">
+            视觉模型：当 AI 问答附带 PDF 页面图片时（在 AI 面板填页码 + 勾选「加图」），调用走的不是上面的主模型，而是这里配置的视觉 provider。<br>
+            主模型保持文本（DeepSeek 之类便宜快），视觉单独走 → 节省 token + 主模型不必支持视觉。
+          </p>
+          <label>当前使用的视觉 provider
+            <select id="visionProvider">
+              <option value="qwen_vl">阿里通义千问 VL（推荐，中文场景好）</option>
+              <option value="openai_vision">OpenAI GPT-4o / 4o-mini（视觉能力顶级）</option>
+              <option value="claude_cli">Claude Code CLI（复用主模型 CLI 配置）</option>
+            </select>
+          </label>
+          <div id="visionActiveHint" class="muted" style="grid-column:1/-1;font-size:11.5px;line-height:1.5;margin-top:-6px"></div>
+
+          <div class="provider-tabs" id="visionProviderTabs" style="margin-top:6px">
+            <button data-vision-panel="qwen_vl" type="button">Qwen-VL</button>
+            <button data-vision-panel="openai_vision" type="button">OpenAI Vision</button>
+            <button data-vision-panel="claude_cli" type="button">Claude CLI</button>
+          </div>
+
+          <div class="provider-panel" data-vision-panel-section="qwen_vl">
+            <label>Base URL <input id="visionQwenBaseUrl" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" /></label>
+            <label>模型 <input id="visionQwenModel" placeholder="qwen-vl-plus / qwen-vl-max / qwen-vl-max-latest" /></label>
+            <label>API Key 环境变量 <input id="visionQwenKeyEnv" placeholder="QWEN_API_KEY" /></label>
+            <label>写入/更新 API Key <input id="visionQwenApiKey" type="password" placeholder="留空不修改 .env" /></label>
+            <label>超时秒数 <input id="visionQwenTimeout" type="number" min="30" step="30" placeholder="90" /></label>
+            <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+              在 <a href="https://dashscope.console.aliyun.com/" target="_blank" rel="noreferrer">阿里云 DashScope 控制台</a> 拿 API key。模型对比：<br>
+              · <code>qwen-vl-plus</code>：~¥0.008/图，速度快，日常文献图够用<br>
+              · <code>qwen-vl-max</code>：~¥0.02/图，精度更高，复杂表格/流程图更稳<br>
+              如果你已在主模型用过 Qwen，环境变量复用就行。
+            </p>
+          </div>
+          <div class="provider-panel hidden" data-vision-panel-section="openai_vision">
+            <label>Base URL <input id="visionOpenaiBaseUrl" placeholder="https://api.openai.com/v1" /></label>
+            <label>模型 <input id="visionOpenaiModel" placeholder="gpt-4o-mini / gpt-4o" /></label>
+            <label>API Key 环境变量 <input id="visionOpenaiKeyEnv" placeholder="OPENAI_API_KEY" /></label>
+            <label>写入/更新 API Key <input id="visionOpenaiApiKey" type="password" placeholder="留空不修改 .env" /></label>
+            <label>超时秒数 <input id="visionOpenaiTimeout" type="number" min="30" step="30" placeholder="90" /></label>
+            <p class="muted" style="grid-column:1/-1;font-size:11px;line-height:1.55">
+              · <code>gpt-4o-mini</code>：~$0.001/图，便宜，理解力够用<br>
+              · <code>gpt-4o</code>：~$0.005/图，高复杂度图表更准<br>
+              如果有国内代理，把 Base URL 改成代理地址。
+            </p>
+          </div>
+          <div class="provider-panel hidden" data-vision-panel-section="claude_cli">
+            <p class="muted" style="font-size:12px;line-height:1.55;margin:0">
+              复用顶层 Claude Code CLI 配置（在 设置→主模型→Claude CLI 里）。<br>
+              当前 Claude 模型：<code id="visionClaudeCurrentModel">claude-sonnet-4-5</code><br>
+              首次使用先在终端跑 <code>claude login</code>。<br>
+              <b>注意</b>：Claude CLI 的视觉调用走你的 Pro/Max 订阅额度（不按 API 计费），但单次启动 CLI 进程比 HTTP 慢一些（~2-5s 起步）。
+            </p>
+          </div>
+
+          <div class="panel-actions">
+            <button id="saveVisionBtn" type="button">保存视觉设置</button>
+            <span id="visionStatus" class="muted"></span>
+          </div>
+        </section>
+
+        <section id="easyscholarSettingsSection" class="settings-section hidden">
+          <p class="muted" style="font-size:12px;line-height:1.55;margin:0">
+            EasyScholar 是国内常用的期刊等级查询服务。在 <a href="https://www.easyscholar.cc/" target="_blank" rel="noreferrer">easyscholar.cc</a> 注册账号后到「开放接口」拿到 <code>secretKey</code>。
+            查询结果写入「<code>期刊等级_自动</code>」字段；你手填的「<code>期刊等级_人工</code>」字段单独存储，<b>无论何时刷新都不会被覆盖</b>。
+          </p>
+          <label class="checkline"><input id="easyscholarEnabled" type="checkbox" /> 启用 EasyScholar 期刊等级查询</label>
+          <label>secret key 环境变量名<input id="easyscholarKeyEnv" placeholder="EASYSCHOLAR_SECRET_KEY" /></label>
+          <label>写入/更新 secret key<input id="easyscholarApiKey" type="password" placeholder="留空不修改 .env" /></label>
+          <div class="field-title" style="margin-top:6px">要写入「期刊等级_自动」的字段</div>
+          <div id="easyscholarFieldList" class="easyscholar-field-grid">
+            <span class="muted">加载中…</span>
+          </div>
+          <div class="panel-actions">
+            <button id="saveEasyscholarBtn" type="button">保存期刊等级源设置</button>
+            <span id="easyscholarStatus" class="muted"></span>
+          </div>
+        </section>
+
+        <section id="citationsSettingsSection" class="settings-section hidden">
+          <div class="citation-layout">
+            <aside class="citation-side">
+              <div class="citation-side-head">
+                <strong>citation 文件列表</strong>
+                <span class="muted" id="citationCount"></span>
+              </div>
+              <div id="citationList" class="citation-list"></div>
+              <div class="citation-new-row">
+                <input id="newCitationName" placeholder="新文件名（英文/拼音/数字，例如 M4_my_review）" />
+                <input id="newCitationDisplay" placeholder="显示名称（可中文）" />
+                <button id="createCitationBtn" type="button">新建 citation</button>
+              </div>
+            </aside>
+            <section class="citation-editor">
+              <div class="citation-editor-head">
+                <strong id="citationEditorTitle">选择左侧文件开始编辑</strong>
+                <div class="panel-actions">
+                  <button id="saveCitationBtn" type="button" disabled>保存到文件</button>
+                  <button id="deleteCitationBtn" class="secondary danger" type="button" disabled>删除</button>
+                  <span id="citationEditorStatus" class="muted"></span>
+                </div>
+              </div>
+              <textarea id="citationEditor" spellcheck="false" placeholder="点击左侧任一 citation 文件查看 / 编辑。顶部「写作上下文」区块（两条 HTML 注释之间）是「帮我引用」的 AI 语境来源。"></textarea>
+            </section>
+          </div>
+        </section>
+
+        <section id="uiSettingsSection" class="settings-section hidden">
+          <div class="ui-settings-body">
+            <h3 class="settings-section-title">主题色</h3>
+            <p class="muted" style="font-size:12px">点色块切换。改动立即生效并保存到 localStorage。</p>
+            <div class="theme-picker" id="themePicker">
+              <span class="tp-label">主题</span>
+              <button class="t-clay" data-theme="clay" title="陶土橘（默认）" type="button"></button>
+              <button class="t-mono" data-theme="mono" title="黑白·极简" type="button"></button>
+              <button class="t-forest" data-theme="forest" title="森林·鼠尾草绿" type="button"></button>
+              <button class="t-ocean" data-theme="ocean" title="深海·犹丝蓝" type="button"></button>
+            </div>
+
+            <h3 class="settings-section-title" style="margin-top:10px">右侧面板</h3>
+            <p class="muted" style="font-size:12px">勾选你要显示的 tab。「笔记」是核心，不能隐藏。</p>
+            <div class="flag-grid ui-tab-grid">
+              <label class="checkline ui-tab-disabled" title="核心面板，无法隐藏"><input type="checkbox" checked disabled /> 笔记</label>
+              <label class="checkline"><input id="uiTabAnnot" type="checkbox" /> 便签</label>
+              <label class="checkline"><input id="uiTabAi" type="checkbox" /> AI</label>
+              <label class="checkline"><input id="uiTabExcerpt" type="checkbox" /> 摘抄</label>
+              <label class="checkline"><input id="uiTabMeta" type="checkbox" /> 分类</label>
+            </div>
+            <div class="panel-actions">
+              <button id="saveUiBtn" type="button">保存界面设置</button>
+              <span id="uiSaveStatus" class="muted"></span>
+            </div>
+          </div>
+        </section>
+
+        <section id="promptsSettingsSection" class="settings-section hidden">
+          <div class="prompt-grid">
+            <label>文献整理提示词<textarea id="notePromptEditor" spellcheck="false"></textarea></label>
+            <label>分类提示词<textarea id="classifyPromptEditor" spellcheck="false"></textarea></label>
+            <label class="template-field">笔记 Markdown 模板<textarea id="noteTemplateEditor" spellcheck="false"></textarea></label>
+          </div>
+          <div class="placeholder-strip">
+            <span>{title}</span><span>{authors}</span><span>{year}</span><span>{venue}</span>
+            <span>{one_sentence_summary}</span><span>{research_question}</span>
+            <span>{methods_and_data}</span><span>{main_findings}</span>
+            <span>{quotable_points}</span><span>{limitations}</span>
+            <span>{relation_to_my_research}</span><span>{manual_note}</span>
+          </div>
+          <div class="panel-actions">
+            <button id="savePromptsBtn" type="button">保存提示词和模板</button>
+            <span id="promptsStatus" class="muted"></span>
+          </div>
+        </section>
+
+        <section id="journalsSettingsSection" class="settings-section hidden">
+          <div class="journal-toolbar">
+            <button id="addJournalBtn" class="secondary" type="button">添加期刊</button>
+            <button id="saveJournalsBtn" type="button">保存到 list.xlsx</button>
+            <span id="journalsStatus" class="muted"></span>
+          </div>
+          <div class="journal-editor">
+            <div class="journal-row journal-header">
+              <span>领域口径</span>
+              <span>期刊名称</span>
+              <span>FT50</span>
+              <span>UTD24</span>
+              <span>ABS3/4</span>
+              <span>ABS学科</span>
+              <span></span>
+            </div>
+            <div id="journalRows"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Category select modal (kept compatible — P5 will redo to 3-col)
+         ============================================================ -->
+    <div id="categoryModal" class="modal hidden">
+      <div class="modal-card category-select-card">
+        <div class="modal-head">
+          <h2>给当前文献选分类</h2>
+          <button id="closeCategoryBtn" class="secondary" type="button">关闭</button>
+        </div>
+        <section class="paper-category-editor">
+          <div>
+            <div class="field-title">一级分类（可多选）</div>
+            <div id="paperPrimaryList" class="chip-grid"></div>
+          </div>
+          <div>
+            <div class="field-title">二级分类（按所选的一级分组）</div>
+            <div id="paperSecondaryList" class="chip-grid-grouped"></div>
+          </div>
+          <div class="category-row">
+            <input id="newPaperSecondary" placeholder="新增二级分类到第一个所选一级" />
+            <button id="addPaperSecondaryBtn" class="secondary" type="button">添加</button>
+          </div>
+          <div>
+            <div class="field-title">三级分类（按所选的二级分组）</div>
+            <div id="paperTertiaryList" class="chip-grid-grouped"></div>
+          </div>
+          <div id="paperCategoryAiHint" class="muted"></div>
+          <div class="panel-actions">
+            <button id="savePaperCategoryBtn" type="button">应用到当前文献</button>
+            <button id="openTreeManagerBtn" class="secondary" type="button">编辑分类体系…</button>
+            <span id="categorySaveStatus" class="muted"></span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Tree manager modal — 3-col category editor
+         ============================================================ -->
+    <div id="treeManagerModal" class="modal hidden">
+      <div class="modal-card category-modal-card">
+        <div class="modal-head">
+          <h2>编辑分类体系（三级）</h2>
+          <button id="closeTreeManagerBtn" class="secondary" type="button">关闭</button>
+        </div>
+        <p class="muted" style="margin:0;font-size:12px">
+          点列表里某项选中它，然后用「重命名 / 删除」操作。重命名会自动同步所有已分类文献。
+        </p>
+        <div id="treeSaveStatus" class="muted" style="font-size:11px"></div>
+        <div class="tree-three-col">
+          <section class="tree-col">
+            <div class="tree-col-head">一级分类</div>
+            <div id="primaryCategoryList" class="tree-list"></div>
+            <div class="tree-col-input">
+              <input id="newPrimaryInput" placeholder="新一级分类名" />
+              <button id="addPrimaryBtn" class="secondary" type="button">新增</button>
+            </div>
+            <div class="tree-col-actions">
+              <button id="renamePrimaryBtn" class="secondary" type="button">重命名</button>
+              <button id="deletePrimaryBtn" class="secondary danger" type="button">删除</button>
+            </div>
+          </section>
+          <section class="tree-col">
+            <div class="tree-col-head"><span id="secondaryColHead">二级分类</span></div>
+            <div id="secondaryCategoryList" class="tree-list"></div>
+            <div class="tree-col-input">
+              <input id="newSecondaryInput" placeholder="新二级分类名（选中一级后启用）" />
+              <button id="addSecondaryBtn" class="secondary" type="button">新增</button>
+            </div>
+            <div class="tree-col-actions">
+              <button id="renameSecondaryBtn" class="secondary" type="button">重命名</button>
+              <button id="deleteSecondaryBtn" class="secondary danger" type="button">删除</button>
+            </div>
+          </section>
+          <section class="tree-col">
+            <div class="tree-col-head"><span id="tertiaryColHead">三级分类</span></div>
+            <div id="tertiaryCategoryList" class="tree-list"></div>
+            <div class="tree-col-input">
+              <input id="newTertiaryInput" placeholder="新三级分类名（选中二级后启用）" />
+              <button id="addTertiaryBtn" class="secondary" type="button">新增</button>
+            </div>
+            <div class="tree-col-actions">
+              <button id="renameTertiaryBtn" class="secondary" type="button">重命名</button>
+              <button id="deleteTertiaryBtn" class="secondary danger" type="button">删除</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Export by category modal
+         ============================================================ -->
+    <div id="exportCategoryModal" class="modal hidden">
+      <div class="modal-card small-modal-card">
+        <div class="modal-head">
+          <h2>按分类导出 PDF + 笔记</h2>
+          <button id="closeExportCategoryBtn" class="secondary" type="button">关闭</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <p class="muted" style="margin:0;font-size:12px;line-height:1.55">
+            选择一个分类（一级 / 二级 / 三级都行），把该分类下所有文献的 PDF 和笔记一次性复制到
+            <code>exports/&lt;分类名&gt;_&lt;时间戳&gt;/</code>。
+          </p>
+          <label>选择要导出的分类<select id="exportCategorySelect"></select></label>
+          <div class="panel-actions">
+            <button id="runExportCategoryBtn" type="button">开始导出</button>
+            <span id="exportCategoryStatus" class="muted"></span>
+          </div>
+          <div id="exportCategoryResult" class="muted" style="font-size:12px;white-space:pre-wrap"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Image-ask modal
+         ============================================================ -->
+    <div id="imageAskModal" class="modal hidden">
+      <div class="modal-card small-modal-card">
+        <div class="modal-head">
+          <h2>按页读图</h2>
+          <button id="closeImageAskBtn" class="secondary" type="button">关闭</button>
+        </div>
+        <div class="image-ask-box">
+          <label class="checkline"><input id="imageAskToggle" type="checkbox" /> 启用：把指定 PDF 页面作为图片交给 AI</label>
+          <label>页码<input id="imagePageInput" placeholder="例如 1 或 1,3-5，最多 6 页" /></label>
+          <div id="imageAskHint" class="muted">扫描件建议填写页码后再问。</div>
+          <div class="panel-actions">
+            <button id="saveImageAskBtn" type="button">应用</button>
+            <span class="muted">只影响当前这次提问方式</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         Translate popup + organize progress
+         ============================================================ -->
+    <div id="translatePopup" class="translate-popup hidden">
+      <div class="translate-head">
+        <strong>划词翻译</strong>
+        <button id="closeTranslateBtn" class="secondary" type="button">关闭</button>
+      </div>
+      <div id="translateSource" class="translate-source"></div>
+      <div id="translateStatus" class="muted"></div>
+      <div id="translateResult" class="translate-result"></div>
+    </div>
+
+    <div id="organizeProgress" class="organize-progress hidden">
+      <div class="organize-progress-head">
+        <strong id="organizeProgressTitle">正在整理</strong>
+        <span id="organizeProgressMeta" class="muted">准备中</span>
+      </div>
+      <div class="organize-progress-track">
+        <div id="organizeProgressBarFill" class="organize-progress-fill"></div>
+      </div>
+      <div id="organizeProgressMessage" class="organize-progress-message muted"></div>
+    </div>
+
+    <!-- ============================================================
+         P3 — Command palette (⌘K). Hidden by default; phase3.js controls.
+         ============================================================ -->
+    <div id="cmdPalette" class="cmd-palette-backdrop">
+      <div class="cmd-palette" role="dialog" aria-label="命令面板">
+        <div class="cmd-input-row">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18"><circle cx="7" cy="7" r="4"/><path d="M10 10l3 3"/></svg>
+          <input id="cmdInput" type="text" placeholder="文献标题 / 作者 / 命令 (整理、设置、主题…)" autocomplete="off" />
+          <span class="kbd-hint">esc</span>
+        </div>
+        <div id="cmdResults" class="cmd-results"></div>
+        <div class="cmd-foot">
+          <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+          <span><kbd>⏎</kbd> 打开</span>
+          <span><kbd>esc</kbd> 关闭</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         P3 — Bulk-action bar. Phase3.js shows when papers selected.
+         ============================================================ -->
+    <div id="bulkActionBar" class="bulk-action-bar hidden">
+      <span class="bulk-count"><strong id="bulkCount">0</strong> 已选</span>
+      <span class="bulk-sep"></span>
+      <button id="bulkCategorizeBtn" type="button">改分类…</button>
+      <button id="bulkStatusBtn" type="button">改阅读状态…</button>
+      <button id="bulkReadBtn" type="button">批量阅读</button>
+      <button id="bulkRankBtn" type="button">批量刷新等级</button>
+      <button id="bulkMultiAskBtn" type="button">多篇问 AI</button>
+      <button id="bulkExportBtn" type="button">导出</button>
+      <button id="bulkDeleteBtn" type="button" class="danger">删除</button>
+      <span class="bulk-sep"></span>
+      <button id="bulkCancelBtn" class="bulk-cancel" type="button" title="退出批量模式">×</button>
+    </div>
+
+    <!-- ============================================================
+         P5 — Category v2 modal: 3-column linked picker.
+         phase5.js opens this when classificationBox clicked
+         (the old #categoryModal stays as a fallback).
+         ============================================================ -->
+    <div id="categoryModalV2" class="modal hidden">
+      <div class="modal-card category-modal-card">
+        <div class="modal-head">
+          <div>
+            <h2>分类</h2>
+            <span id="categoryV2Subtitle" class="muted" style="font-size:12px"></span>
+          </div>
+          <button id="closeCategoryV2Btn" class="secondary" type="button">关闭</button>
+        </div>
+        <div class="cat-picker">
+          <div id="catPathRow" class="path-row empty">
+            <span class="path-label">已选</span>
+            <span id="catPathChips" style="display:contents"></span>
+            <span class="spacer"></span>
+            <a id="catClearLink" class="clear-link">全部清空</a>
+          </div>
+          <div class="cat-cols">
+            <div class="cat-col">
+              <div class="cat-col-head">
+                <span>一级</span>
+                <span class="col-tag" id="catPrimaryTag">多选</span>
+              </div>
+              <div id="catPrimaryList" class="cat-col-list"></div>
+              <div class="cat-col-add">
+                <input id="catPrimaryNew" placeholder="新增一级…" />
+                <button id="catPrimaryAdd" type="button">+</button>
+              </div>
+            </div>
+            <div class="cat-col">
+              <div class="cat-col-head">
+                <span id="catSecondaryHead">二级</span>
+                <span class="col-tag" id="catSecondaryTag"></span>
+              </div>
+              <div id="catSecondaryList" class="cat-col-list"></div>
+              <div class="cat-col-add">
+                <input id="catSecondaryNew" placeholder="新增二级…" />
+                <button id="catSecondaryAdd" type="button">+</button>
+              </div>
+            </div>
+            <div class="cat-col">
+              <div class="cat-col-head">
+                <span id="catTertiaryHead">三级</span>
+                <span class="col-tag" id="catTertiaryTag"></span>
+              </div>
+              <div id="catTertiaryList" class="cat-col-list"></div>
+              <div class="cat-col-add">
+                <input id="catTertiaryNew" placeholder="新增三级…" />
+                <button id="catTertiaryAdd" type="button">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="cat-foot">
+            <span class="foot-hint">点行勾选 · 左右联动 · hover 出现重命名/删除</span>
+            <span class="spacer"></span>
+            <span id="catSaveStatus" class="muted"></span>
+            <button id="catCancelBtn" class="secondary" type="button">取消</button>
+            <button id="catApplyBtn" class="primary" type="button">应用到当前文献</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/web/app.js"></script>
+    <script type="module" src="/web/app-phase1.js"></script>
+    <script type="module" src="/web/app-phase2.js"></script>
+    <script type="module" src="/web/app-phase3.js"></script>
+    <script type="module" src="/web/app-phase4.js"></script>
+    <script type="module" src="/web/app-phase5.js"></script>
+    <script type="module" src="/web/app-polish.js"></script>
+    <script type="module" src="/web/app-design-ai.js"></script>
+    <script type="module" src="/web/app-design-excerpt.js"></script>
+    <script type="module" src="/web/app-design-note.js"></script>
+    <script type="module" src="/web/app-design-sticky.js"></script>
+    <script type="module" src="/web/app-design-meta.js"></script>
+    <script type="module" src="/web/app-design-cat-modal.js"></script>
+    <script type="module" src="/web/app-design-settings.js"></script>
+    <script type="module" src="/web/app-design-helpread.js"></script>
+    <script type="module" src="/web/app-design-shortcuts.js"></script>
+    <script type="module" src="/web/app-design-coauth.js"></script>
+    <script type="module" src="/web/app-design-models.js"></script>
+    <script type="module" src="/web/app-design-multiask.js"></script>
+  </body>
+</html>

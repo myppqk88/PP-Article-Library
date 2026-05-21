@@ -1,0 +1,705 @@
+/* ============================================================
+ * 文献工作台 — 设计系统底座 (Design System Foundation)
+ *
+ * 这个文件定义两块东西：
+ *   1. CSS 变量（颜色 / 圆角 / 间距 / 字号 / 阴影）
+ *   2. 基础组件类，统一以 `dc-` 前缀（design-component）避免和现有 .chip /
+ *      .card 等冲突。
+ *
+ * 加载顺序：styles.css → styles-features.css → styles-design.css
+ *
+ * 所有的 panel patch（app-design-*.js）从这里取值，每个 patch 文件可
+ * 独立删除回滚而不影响这套底座。
+ * ============================================================ */
+
+:root {
+  /* ----- Surface / line ----- */
+  --dc-bg: #f7f5ef;
+  --dc-bg-deep: #efece2;
+  --dc-panel: #fcfbf7;
+  --dc-panel-soft: #f5f3eb;
+  --dc-surface: #ffffff;
+  --dc-line: #e6e1d4;
+  --dc-line-soft: #ede9dd;
+
+  /* ----- Text ----- */
+  --dc-text-strong: #1c1b18;
+  --dc-text: #2c2a25;
+  --dc-muted: #807a6f;
+  --dc-muted-soft: #b1aa9d;
+
+  /* ----- Accent (clay orange) ----- */
+  --dc-accent: #cc785c;
+  --dc-accent-strong: #b25e44;
+  --dc-accent-soft: #fbe9e0;
+  --dc-accent-tint: #f7eee6;
+  --dc-accent-ink: #ffffff;
+
+  /* ----- Status ----- */
+  --dc-danger: #a04545;
+  --dc-danger-soft: #f7e7e3;
+  --dc-ok: #4f7d52;
+  --dc-warn: #b08a3a;
+
+  /* ----- Sticky-note color slots (5 fixed) ----- */
+  --dc-sticky-brown-bar: #a38570;
+  --dc-sticky-brown-dot: #8c6f5a;
+  --dc-sticky-amber-bar: #e0b663;
+  --dc-sticky-amber-dot: #d4a24a;
+  --dc-sticky-red-bar: #c97268;
+  --dc-sticky-red-dot: #b5564e;
+  --dc-sticky-orange-bar: #d89066;
+  --dc-sticky-orange-dot: #c97a4b;
+  --dc-sticky-green-bar: #85a674;
+  --dc-sticky-green-dot: #6b8e5a;
+
+  /* ----- Journal rank chip colors ----- */
+  --dc-rank-cas1-bg: #c56a60;
+  --dc-rank-cas1-fg: #ffffff;
+  --dc-rank-cas2-bg: #e0a187;
+  --dc-rank-cas2-fg: #ffffff;
+  --dc-rank-ssci-bg: #9dc8f5;
+  --dc-rank-ssci-fg: #2c5680;
+  --dc-rank-sci-bg: #a4cdef;
+  --dc-rank-sci-fg: #2c5680;
+  --dc-rank-cssci-bg: #d8d2c7;
+  --dc-rank-cssci-fg: #5c544a;
+  --dc-rank-ft50-bg: #f9d976;
+  --dc-rank-ft50-fg: #7a5e1c;
+  --dc-rank-utd-bg: #b6db9a;
+  --dc-rank-utd-fg: #3f5f2a;
+  --dc-rank-abs-bg: #f3b1c2;
+  --dc-rank-abs-fg: #7e3a4e;
+
+  /* ----- Radii ----- */
+  --dc-r-card: 12px;
+  --dc-r-button: 8px;
+  --dc-r-input: 6px;
+  --dc-r-pill: 999px;
+  --dc-r-modal: 16px;
+
+  /* ----- Spacing scale ----- */
+  --dc-s-1: 2px;
+  --dc-s-2: 4px;
+  --dc-s-3: 8px;
+  --dc-s-4: 12px;
+  --dc-s-5: 16px;
+  --dc-s-6: 18px;
+  --dc-s-7: 24px;
+  --dc-s-8: 32px;
+
+  /* ----- Typography ----- */
+  --dc-fs-hero: 36px;
+  --dc-fs-h1: 18px;
+  --dc-fs-h2: 15px;
+  --dc-fs-body: 13px;
+  --dc-fs-sm: 12px;
+  --dc-fs-xs: 11px;
+  --dc-fs-xxs: 10px;
+  --dc-fw-medium: 500;
+  --dc-fw-bold: 600;
+  --dc-font-serif: "Iowan Old Style", "Source Serif Pro", "Source Serif 4",
+    "Charter", "Georgia", "Songti SC", "宋体", serif;
+  --dc-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
+  --dc-font-mono: "SF Mono", "JetBrains Mono", "Cascadia Mono", "Consolas",
+    "Fira Code", "Menlo", monospace;
+
+  /* ----- Shadows ----- */
+  --dc-shadow-1: 0 1px 2px rgba(60, 50, 40, 0.05);
+  --dc-shadow-2: 0 6px 18px rgba(60, 50, 40, 0.10);
+  --dc-shadow-pop: 0 20px 50px -10px rgba(60, 50, 40, 0.20);
+}
+
+/* ============================================================
+ * Component: dc-chip — pill-shaped tag/label
+ * ============================================================ */
+.dc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--dc-r-pill);
+  background: var(--dc-panel-soft);
+  color: var(--dc-muted);
+  border: 1px solid var(--dc-line);
+  font-size: var(--dc-fs-xs);
+  line-height: 1.5;
+  cursor: default;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.dc-chip-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.dc-chip.dc-chip-accent {
+  background: var(--dc-accent-soft);
+  border-color: var(--dc-accent-soft);
+  color: var(--dc-accent-strong);
+  font-weight: var(--dc-fw-medium);
+}
+.dc-chip.dc-chip-solid {
+  background: var(--dc-accent);
+  border-color: var(--dc-accent);
+  color: var(--dc-accent-ink);
+  font-weight: var(--dc-fw-medium);
+}
+.dc-chip.dc-chip-removable {
+  padding-right: 6px;
+}
+.dc-chip-remove {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 0 0 0 2px;
+  font-size: 13px;
+  line-height: 1;
+}
+.dc-chip-remove:hover {
+  opacity: 1;
+}
+.dc-chip-count {
+  font-size: var(--dc-fs-xxs);
+  color: var(--dc-muted);
+  margin-left: 3px;
+}
+.dc-chip-mini {
+  font-size: var(--dc-fs-xxs);
+  padding: 1px 6px;
+  letter-spacing: 0.02em;
+}
+
+/* AI 建议 inline badge */
+.dc-badge-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--dc-r-pill);
+  background: var(--dc-accent-soft);
+  color: var(--dc-accent-strong);
+  font-size: var(--dc-fs-xxs);
+  font-weight: var(--dc-fw-medium);
+  line-height: 1.4;
+}
+
+/* ============================================================
+ * Component: dc-pill-tabs — pill-shaped tab strip with counts
+ * ============================================================ */
+.dc-pill-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--dc-panel-soft);
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-pill);
+}
+.dc-pill-tabs button {
+  border: none;
+  background: transparent;
+  padding: 4px 12px;
+  border-radius: var(--dc-r-pill);
+  font-size: var(--dc-fs-xs);
+  color: var(--dc-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.dc-pill-tabs button:hover {
+  color: var(--dc-text-strong);
+}
+.dc-pill-tabs button.active {
+  background: var(--dc-surface);
+  color: var(--dc-text-strong);
+  font-weight: var(--dc-fw-medium);
+  box-shadow: var(--dc-shadow-1);
+}
+.dc-pill-tabs .dc-pill-count {
+  color: var(--dc-muted);
+  margin-left: 3px;
+  font-size: var(--dc-fs-xxs);
+}
+.dc-pill-tabs button.active .dc-pill-count {
+  color: var(--dc-accent-strong);
+}
+
+/* ============================================================
+ * Component: dc-seg — segmented control (like the 状态 picker)
+ * ============================================================ */
+.dc-seg {
+  display: inline-flex;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-pill);
+  background: var(--dc-panel-soft);
+  padding: 2px;
+  overflow: hidden;
+}
+.dc-seg button {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: var(--dc-fs-xs);
+  color: var(--dc-muted);
+  cursor: pointer;
+  border-radius: calc(var(--dc-r-pill) - 2px);
+  white-space: nowrap;
+}
+.dc-seg button:hover {
+  color: var(--dc-text-strong);
+}
+.dc-seg button.active {
+  background: var(--dc-accent);
+  color: var(--dc-accent-ink);
+  font-weight: var(--dc-fw-medium);
+}
+
+/* ============================================================
+ * Component: dc-card — white surface with subtle border
+ * ============================================================ */
+.dc-card {
+  background: var(--dc-surface);
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-card);
+  padding: var(--dc-s-4) var(--dc-s-5);
+  position: relative;
+}
+.dc-card.dc-card-soft {
+  background: var(--dc-panel-soft);
+  border-color: var(--dc-line-soft);
+}
+.dc-card.dc-card-tint {
+  background: var(--dc-accent-tint);
+  border-color: var(--dc-accent-soft);
+}
+/* Left vertical color stripe — used by stickies and excerpt quotes */
+.dc-card-stripe {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--dc-muted-soft);
+}
+
+/* ============================================================
+ * Component: dc-hero — large serif stats display
+ * ============================================================ */
+.dc-hero {
+  background: var(--dc-panel-soft);
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-card);
+  padding: var(--dc-s-5) var(--dc-s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dc-s-4);
+}
+.dc-hero-stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dc-s-5);
+  font-family: var(--dc-font-serif);
+}
+.dc-hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+.dc-hero-stat .dc-hero-num {
+  font-size: var(--dc-fs-hero);
+  font-weight: var(--dc-fw-bold);
+  color: var(--dc-accent-strong);
+  letter-spacing: -0.02em;
+}
+.dc-hero-stat .dc-hero-label {
+  font-family: var(--dc-font-sans);
+  font-size: var(--dc-fs-sm);
+  color: var(--dc-muted);
+}
+.dc-hero-sep {
+  color: var(--dc-muted-soft);
+  font-size: 20px;
+}
+.dc-hero-actions {
+  display: flex;
+  gap: var(--dc-s-3);
+  flex-wrap: wrap;
+}
+.dc-hero-hint {
+  font-size: var(--dc-fs-xs);
+  color: var(--dc-muted);
+  line-height: 1.5;
+}
+
+/* ============================================================
+ * Component: dc-stars — clickable star-rating row
+ * ============================================================ */
+.dc-stars {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+.dc-star {
+  font-size: 18px;
+  color: var(--dc-muted-soft);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.1s ease;
+}
+.dc-star.on {
+  color: var(--dc-accent);
+}
+.dc-star:hover {
+  color: var(--dc-accent-strong);
+}
+.dc-stars-label {
+  font-size: var(--dc-fs-xs);
+  color: var(--dc-muted);
+  margin-left: 6px;
+}
+
+/* ============================================================
+ * Component: dc-button — flat clay-orange or ghost
+ * ============================================================ */
+.dc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--dc-r-button);
+  font-size: var(--dc-fs-body);
+  border: 1px solid var(--dc-line);
+  background: var(--dc-surface);
+  color: var(--dc-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.dc-btn:hover {
+  border-color: var(--dc-accent);
+  color: var(--dc-accent-strong);
+}
+.dc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.dc-btn-primary {
+  background: var(--dc-accent);
+  border-color: var(--dc-accent);
+  color: var(--dc-accent-ink);
+  font-weight: var(--dc-fw-medium);
+}
+.dc-btn-primary:hover {
+  background: var(--dc-accent-strong);
+  border-color: var(--dc-accent-strong);
+  color: var(--dc-accent-ink);
+}
+.dc-btn-ghost {
+  background: var(--dc-panel-soft);
+}
+.dc-btn-icon {
+  padding: 6px 8px;
+  border-radius: var(--dc-r-button);
+  background: transparent;
+  border: none;
+  color: var(--dc-muted);
+  cursor: pointer;
+}
+.dc-btn-icon:hover {
+  background: var(--dc-accent-tint);
+  color: var(--dc-accent-strong);
+}
+.dc-btn-icon svg {
+  display: block;
+}
+.dc-btn-sm {
+  padding: 4px 10px;
+  font-size: var(--dc-fs-xs);
+}
+.dc-btn-danger {
+  color: var(--dc-danger);
+}
+.dc-btn-danger:hover {
+  background: var(--dc-danger-soft);
+  border-color: var(--dc-danger);
+  color: var(--dc-danger);
+}
+
+/* ============================================================
+ * Component: dc-rank-chip — journal rank colored chip
+ * ============================================================ */
+.dc-rank-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--dc-r-pill);
+  font-size: var(--dc-fs-xs);
+  font-weight: var(--dc-fw-medium);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.dc-rank-chip.cas1 { background: var(--dc-rank-cas1-bg); color: var(--dc-rank-cas1-fg); }
+.dc-rank-chip.cas-other { background: var(--dc-rank-cas2-bg); color: var(--dc-rank-cas2-fg); }
+.dc-rank-chip.ssci { background: var(--dc-rank-ssci-bg); color: var(--dc-rank-ssci-fg); }
+.dc-rank-chip.sci  { background: var(--dc-rank-sci-bg);  color: var(--dc-rank-sci-fg); }
+.dc-rank-chip.cssci{ background: var(--dc-rank-cssci-bg);color: var(--dc-rank-cssci-fg); }
+.dc-rank-chip.ft50 { background: var(--dc-rank-ft50-bg); color: var(--dc-rank-ft50-fg); }
+.dc-rank-chip.utd  { background: var(--dc-rank-utd-bg);  color: var(--dc-rank-utd-fg); }
+.dc-rank-chip.abs  { background: var(--dc-rank-abs-bg);  color: var(--dc-rank-abs-fg); }
+
+/* ============================================================
+ * Component: dc-input — refined input/textarea
+ * ============================================================ */
+.dc-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-input);
+  background: var(--dc-surface);
+  color: var(--dc-text);
+  font-size: var(--dc-fs-body);
+  font-family: inherit;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.dc-input:focus {
+  outline: none;
+  border-color: var(--dc-accent);
+  box-shadow: 0 0 0 3px var(--dc-accent-soft);
+}
+.dc-input::placeholder {
+  color: var(--dc-muted-soft);
+}
+.dc-input-sm {
+  padding: 4px 8px;
+  font-size: var(--dc-fs-xs);
+}
+
+/* ============================================================
+ * Saving indicator (left-bottom green dot)
+ * ============================================================ */
+.dc-saving {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--dc-fs-xs);
+  color: var(--dc-ok);
+}
+.dc-saving::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dc-ok);
+}
+
+/* ============================================================
+ * Component: dc-breadcrumb — chain of category chips with chevron
+ * ============================================================ */
+.dc-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dc-breadcrumb-sep {
+  color: var(--dc-muted-soft);
+  font-size: var(--dc-fs-sm);
+  user-select: none;
+  margin: 0 2px;
+}
+
+/* ============================================================
+ * Component: dc-section — labeled section header with subtle
+ *   separator line + small uppercase-ish label
+ * ============================================================ */
+.dc-section-label {
+  font-size: var(--dc-fs-xs);
+  color: var(--dc-muted);
+  font-weight: var(--dc-fw-medium);
+  margin: 0 0 6px 0;
+  letter-spacing: 0.04em;
+}
+.dc-section-hr {
+  border: 0;
+  border-top: 1px solid var(--dc-line-soft);
+  margin: var(--dc-s-4) 0;
+}
+
+/* ============================================================
+ * EasyScholar settings — force labels visible & tight to checkbox
+ * 用 flex-wrap 替代 grid：每个 label 自然贴住、自适应宽度，避免 grid
+ * cell stretch 把 checkbox 推到左边、label 推到右边产生大空隙。
+ * ============================================================ */
+#easyscholarSettingsSection .easyscholar-field-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  grid-template-columns: none !important;
+  gap: 6px 14px !important;
+  padding: 10px 12px !important;
+  background: var(--dc-panel-soft);
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-card);
+}
+#easyscholarSettingsSection label.checkline {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: visible;
+  font-size: 12px;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+#easyscholarSettingsSection label.checkline > input[type="checkbox"] {
+  /* 反制 styles.css 里 label > input { display:block; width:100% } 的全局
+   * 规则——checkbox 必须保留原生 inline 尺寸 */
+  display: inline-block !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  flex-shrink: 0;
+  accent-color: var(--dc-accent);
+}
+/* 「启用」checkbox 也是 label > input，同样防 100% */
+#easyscholarSettingsSection > label.checkline > input[type="checkbox"] {
+  display: inline-block !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+#easyscholarSettingsSection label.checkline > span {
+  display: inline-block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  color: var(--dc-text);
+}
+#easyscholarSettingsSection label.checkline > span .muted {
+  margin-left: 4px;
+  font-family: var(--dc-font-mono);
+  color: var(--dc-muted-soft);
+}
+/* The 启用 checkbox (direct child of section, NOT inside the field grid)
+ * also needs alignment fix */
+#easyscholarSettingsSection > label.checkline {
+  margin-bottom: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--dc-text);
+  display: inline-flex !important;
+  justify-content: flex-start !important;
+  width: auto !important;
+}
+
+/* Modal max-width clamp so settings doesn't sprawl across 1300+px screens.
+ * Applies to both .modal-card (legacy) and the new design wrapper. */
+.modal .modal-card,
+.modal-card,
+.dc-modal-card,
+.modal-body {
+  max-width: 960px !important;
+  width: min(96vw, 960px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+/* Settings modal: cap interior section width too */
+#settingsModal .settings-section {
+  max-width: 100%;
+}
+
+/* 旧版每个 tab 内 inline 的保存按钮 / 状态文字隐藏，统一用底部「保存并测试」 */
+#settingsModal #modelSettingsSection #saveSettingsBtn,
+#settingsModal #modelSettingsSection #settingsStatus,
+#settingsModal #translationSettingsSection #saveTranslationBtn,
+#settingsModal #translationSettingsSection #translationStatus,
+#settingsModal #easyscholarSettingsSection #saveEasyscholarBtn,
+#settingsModal #easyscholarSettingsSection #easyscholarStatus,
+#settingsModal #journalsSettingsSection #saveJournalsBtn,
+#settingsModal #promptsSettingsSection #savePromptsBtn,
+#settingsModal #uiSettingsSection #saveUiBtn {
+  display: none !important;
+}
+/* …不过 footer 那个「保存并测试」就是点这些隐藏按钮触发的，所以它们仍需存在 */
+#easyscholarSettingsSection {
+  max-width: 720px;
+}
+
+/* ============================================================
+ * Sticky note color stripe (applied to .sticky-item in app.js)
+ * ============================================================ */
+.sticky-item {
+  position: relative;
+}
+.sticky-item[data-sticky-color]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--dc-muted-soft);
+}
+.sticky-item[data-sticky-color="clay"]::before,
+.sticky-item[data-sticky-color="orange"]::before { background: var(--dc-sticky-orange-bar); }
+.sticky-item[data-sticky-color="yellow"]::before,
+.sticky-item[data-sticky-color="amber"]::before  { background: var(--dc-sticky-amber-bar); }
+.sticky-item[data-sticky-color="green"]::before   { background: var(--dc-sticky-green-bar); }
+.sticky-item[data-sticky-color="blue"]::before    { background: #6f9ad1; }
+.sticky-item[data-sticky-color="pink"]::before,
+.sticky-item[data-sticky-color="red"]::before    { background: var(--dc-sticky-red-bar); }
+.sticky-item[data-sticky-color="brown"]::before  { background: var(--dc-sticky-brown-bar); }
+
+/* Color picker dot active state — make active dot bigger */
+.sticky-color-row .color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.sticky-color-row .color-dot.active {
+  border-color: var(--dc-text-strong);
+  transform: scale(1.15);
+}
+
+/* ============================================================
+ * Toggle (chip-form, e.g. 多轮)
+ * ============================================================ */
+.dc-toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--dc-line);
+  border-radius: var(--dc-r-pill);
+  background: var(--dc-panel-soft);
+  color: var(--dc-muted);
+  font-size: var(--dc-fs-xs);
+  cursor: pointer;
+  user-select: none;
+}
+.dc-toggle-chip:hover {
+  border-color: var(--dc-accent);
+}
+.dc-toggle-chip.on {
+  background: var(--dc-accent-tint);
+  border-color: var(--dc-accent);
+  color: var(--dc-accent-strong);
+  font-weight: var(--dc-fw-medium);
+}
