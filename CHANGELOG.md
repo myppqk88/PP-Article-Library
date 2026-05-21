@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## v0.2.0 - 2026-05-21
 
-- Clarified macOS unsigned-app warnings and first-open steps in README.
-- Marked v0.2.0 as the target for no-cost packaged macOS/Windows launchers.
+- Added release packaging for separate macOS and Windows ZIP downloads.
+- Added an unsigned macOS `.app` wrapper that launches the local workbench without a `.command` file.
+- Added a clearer Windows package entry point: `Start PP Article Library.bat`.
+- Clarified macOS unsigned-app warnings and first-open steps in README and release notes.
 
 ## v0.1.0 - 2026-05-21
 

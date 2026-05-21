@@ -49,6 +49,9 @@ collections/by_category/*
 exports/*
 !exports/.gitkeep
 .local/
+dist/
+build/
+*.spec
 _*.log
 _*.err
 _out.txt

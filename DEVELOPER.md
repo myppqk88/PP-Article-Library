@@ -352,6 +352,7 @@ CLI + Library 双入口：
 | 加新的 API 路由 | ① 写 handler ② 路由分发 ③ **更新 `DEVELOPER.md §4` 路由表** ④ 前端 fetch 调用 |
 | 加新的 Python 包依赖 | ① 在脚本里 import ② **加进 `requirements.txt`** ③ 在 `DEVELOPER.md §1` 技术栈中提一下 |
 | 加新的数据目录 (如 `library/foo/`) | ① 在 `.gitignore` 加 `library/foo/*` ② 在 `library/foo/.gitkeep` 创建占位 ③ 在 `DEVELOPER.md §2` 目录树补一行 |
+| 改发布包 / 启动方式 | ① 更新 `packaging/build_release.py` ② 本地跑 `python3 packaging/build_release.py --version vX.Y.Z` ③ 更新 README/CHANGELOG ④ 发布 Release assets |
 | 改 EasyScholar 字段映射 | 改 `FIELD_LABELS` 和 `FIELD_ALIASES` —— 用户的 settings.yaml:easyscholar.enabled_fields 若用到老 key 不影响（mapping 不存在就跳过） |
 | 改分类树结构 | 必须保持 `normalize_category_tree` 向后兼容（旧的 list 格式自动转新格式） |
 | 改 papers.csv schema | 写一次性迁移：让 `read_csv` 能读旧 CSV（缺列填空字符串，由 `INDEX_FIELDS` 兜底） |
@@ -403,6 +404,7 @@ CLI + Library 双入口：
 > 写日期 + 一句话；细节在 git commit message 里。
 
 - 2026-05-21 README 补充 macOS 未签名下载警告与首次打开步骤，明确 v0.2.0 目标是无付费签名前提下尽量简化启动
+- 2026-05-21 v0.2.0 发布包：新增 `packaging/build_release.py`，生成 macOS `.app` 包装器和 Windows 独立 zip 入口
 - 2026-05-21 v0.1.0 发布准备：改用 PolyForm Noncommercial License 1.0.0，补充 NOTICE/CHANGELOG，并明确当前为源码启动版
 - 2026-05-21 公开仓库整理：补充 chat_history/annotations 忽略规则，防止个人问答和历史注释数据进入 GitHub
 - 2026-05-21 路径跨平台兼容：CSV 统一保存 `/` 路径，读取层兼容旧 Windows `\` 路径，修复 macOS PDF `file not found`

@@ -5,15 +5,15 @@
 - Python 3 + 原生浏览器 JS，零云依赖（除非你自己接 AI provider）
 - 所有数据存在本地文件夹，可以放云盘里跨设备同步
 - 支持 macOS / Windows / Linux（任何能跑 Python 3 + Chrome 系浏览器的系统都行）
-- 当前 `v0.1.0` 是源码启动版；`v0.2.0` 计划提供 macOS `.app` 和 Windows `.exe/.zip` 一键版
+- 当前 `v0.2.0` 提供 macOS / Windows 分开的下载包；源码启动器仍保留给高级用户
 
 > **macOS 用户请先看这里**
 >
-> `v0.1.0` 还不是 Apple 签名 App。从 GitHub 下载后，macOS 可能提示：
+> `v0.2.0` 的 Mac 包是未付费签名的 `.app`。从 GitHub 下载后，macOS 可能提示：
 >
-> `Apple 无法验证“打开文献工作台.command”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。`
+> `Apple 无法验证“PP Article Library.app”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。`
 >
-> 这是 macOS 对未签名网络下载脚本的安全提醒，不代表本项目会上传你的 PDF、笔记或 API key。当前版本适合愿意处理一次 Mac 安全提示的用户；完全小白的一键版会在 `v0.2.0` 做。
+> 这是 macOS 对未签名网络下载 App 的安全提醒，不代表本项目会上传你的 PDF、笔记或 API key。第一次请用「右键 / 双指点按 → 打开」。完全免提示需要 Apple Developer 付费签名，本项目暂不承担该成本。
 
 ## 适合你吗？
 
@@ -29,35 +29,40 @@
 
 ## 快速开始
 
-### 下载 ZIP 测试
+### 普通用户下载
 
 ```
-1. 打开 GitHub 仓库 → Code → Download ZIP
-2. 解压到一个新文件夹
-3. 进项目目录，双击：
-   - Windows：打开文献工作台.bat
-   - macOS：打开文献工作台.command
-4. 首次启动会自动：
+1. 打开 [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases)
+2. 下载对应系统：
+   - macOS：PP-Article-Library-v0.2.0-macOS.zip
+   - Windows：PP-Article-Library-v0.2.0-Windows.zip
+3. 解压到一个新文件夹
+4. 进文件夹，双击：
+   - macOS：PP Article Library.app
+   - Windows：Start PP Article Library.bat
+5. 首次启动会自动：
    - 探测系统 Python（PATH / Anaconda / 官方安装路径）
    - pip install -r requirements.txt（含 OCR 引擎，~50MB）
    - 从 settings.example.yaml 复制出 settings.yaml
    - 从 .env.example 复制出 .env
    - 建好所有数据目录（library/、citations/、inbox/ 等）
-5. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
+6. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
 ```
 
-路径说明：工作台内部统一把 PDF / 笔记路径保存成 `library/pdfs/xxx.pdf` 这种 `/` 写法。Windows 的 `.bat` 和 macOS 的 `.command` 都能读取；旧数据里如果混有 Windows 的 `\` 路径，启动后也会自动兼容，所以跨系统迁移时不会因为路径分隔符不同而找不到 PDF。
+`v0.2.0` 暂不内置 Python。多数研究者电脑里已经有 Python / Anaconda；如果没有，先安装 Python 3.10+，Windows 安装时勾选 `Add Python to PATH`。
+
+路径说明：工作台内部统一把 PDF / 笔记路径保存成 `library/pdfs/xxx.pdf` 这种 `/` 写法。Windows 和 macOS 都能读取；旧数据里如果混有 Windows 的 `\` 路径，启动后也会自动兼容，所以跨系统迁移时不会因为路径分隔符不同而找不到 PDF。
 
 ### macOS 第一次打开
 
 如果直接双击出现黄色警告：
 
 1. 点「完成」，不要点「移到废纸篓」。
-2. 回到 Finder，对 `打开文献工作台.command` 右键 / 双指点按。
+2. 回到 Finder，对 `PP Article Library.app` 右键 / 双指点按。
 3. 选择「打开」。
 4. 如果仍然弹窗，按系统提示选择「打开」或到「系统设置 → 隐私与安全性」里允许打开。
 
-如果右键打开仍失败，再用终端执行一次：
+如果你用的是源码版 `.command`，右键打开仍失败，再用终端执行一次：
 
 ```bash
 chmod +x *.command
@@ -70,7 +75,7 @@ xattr -dr com.apple.quarantine .
 ./打开文献工作台.command
 ```
 
-这是 `v0.1.0` 源码启动版的已知门槛。后续 `v0.2.0` 会提供 macOS `.app`，把这一步尽量简化到「下载 → 解压 → 右键打开一次」。
+`v0.2.0` 已经把 Mac 流程简化到「下载 → 解压 → 右键打开一次」。由于没有 Apple Developer 付费签名，第一次安全提示无法完全消除。
 
 ### Git 用户
 
