@@ -7,6 +7,14 @@
 - 支持 macOS / Windows / Linux（任何能跑 Python 3 + Chrome 系浏览器的系统都行）
 - 当前 `v0.1.0` 是源码启动版；`v0.2.0` 计划提供 macOS `.app` 和 Windows `.exe/.zip` 一键版
 
+> **macOS 用户请先看这里**
+>
+> `v0.1.0` 还不是 Apple 签名 App。从 GitHub 下载后，macOS 可能提示：
+>
+> `Apple 无法验证“打开文献工作台.command”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。`
+>
+> 这是 macOS 对未签名网络下载脚本的安全提醒，不代表本项目会上传你的 PDF、笔记或 API key。当前版本适合愿意处理一次 Mac 安全提示的用户；完全小白的一键版会在 `v0.2.0` 做。
+
 ## 适合你吗？
 
 适合：
@@ -21,38 +29,60 @@
 
 ## 快速开始
 
-### 最简单（推荐）：直接双击启动器
+### 下载 ZIP 测试
 
 ```
-1. git clone https://github.com/myppqk88/PP-Article-Library.git
-2. 进项目目录，双击：
+1. 打开 GitHub 仓库 → Code → Download ZIP
+2. 解压到一个新文件夹
+3. 进项目目录，双击：
    - Windows：打开文献工作台.bat
    - macOS：打开文献工作台.command
-3. 首次启动会自动：
+4. 首次启动会自动：
    - 探测系统 Python（PATH / Anaconda / 官方安装路径）
    - pip install -r requirements.txt（含 OCR 引擎，~50MB）
    - 从 settings.example.yaml 复制出 settings.yaml
    - 从 .env.example 复制出 .env
    - 建好所有数据目录（library/、citations/、inbox/ 等）
-4. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
+5. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
 ```
 
 路径说明：工作台内部统一把 PDF / 笔记路径保存成 `library/pdfs/xxx.pdf` 这种 `/` 写法。Windows 的 `.bat` 和 macOS 的 `.command` 都能读取；旧数据里如果混有 Windows 的 `\` 路径，启动后也会自动兼容，所以跨系统迁移时不会因为路径分隔符不同而找不到 PDF。
 
-### macOS 第一次打开提示
+### macOS 第一次打开
 
-如果 macOS 提示 `.command` 没有权限，说明下载或迁移时执行权限丢了。进项目目录后运行一次：
+如果直接双击出现黄色警告：
+
+1. 点「完成」，不要点「移到废纸篓」。
+2. 回到 Finder，对 `打开文献工作台.command` 右键 / 双指点按。
+3. 选择「打开」。
+4. 如果仍然弹窗，按系统提示选择「打开」或到「系统设置 → 隐私与安全性」里允许打开。
+
+如果右键打开仍失败，再用终端执行一次：
 
 ```bash
 chmod +x *.command
+xattr -dr com.apple.quarantine .
 ```
 
-如果提示无法验证开发者，这是 macOS 对网络下载程序的安全提醒。`v0.1.0` 还不是签名 `.app`，可以右键 `.command` → 打开，或按系统提示允许。后续 `v0.2.0` 会把启动体验封装得更像普通应用。
+然后再运行：
+
+```bash
+./打开文献工作台.command
+```
+
+这是 `v0.1.0` 源码启动版的已知门槛。后续 `v0.2.0` 会提供 macOS `.app`，把这一步尽量简化到「下载 → 解压 → 右键打开一次」。
+
+### Git 用户
+
+```bash
+git clone https://github.com/myppqk88/PP-Article-Library.git literature-hub
+cd literature-hub
+./打开文献工作台.command  # macOS
+```
 
 ### 手动启动（如果脚本启动器跑不了）
 
 ```bash
-git clone https://github.com/myppqk88/PP-Article-Library.git literature-hub
 cd literature-hub
 pip install -r requirements.txt
 python3 scripts/server.py

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Clarified macOS unsigned-app warnings and first-open steps in README.
+- Marked v0.2.0 as the target for no-cost packaged macOS/Windows launchers.
+
 ## v0.1.0 - 2026-05-21
 
 - First public source release of PP Article Library.
