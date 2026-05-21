@@ -404,6 +404,7 @@ CLI + Library 双入口：
 > 写日期 + 一句话；细节在 git commit message 里。
 
 - 2026-05-21 README 补充 macOS 未签名下载警告与首次打开步骤，明确 v0.2.0 目标是无付费签名前提下尽量简化启动
+- 2026-05-21 v0.2.2 改 macOS `.app` 启动体验：双击后打开 Terminal 进度窗口，显示依赖安装和服务启动日志
 - 2026-05-21 v0.2.1 修正 macOS 未公证 App 说明：补充 quarantine 解除步骤、Mac 包内 `MAC_FIRST_RUN.txt`、打包时尝试 ad-hoc 签名
 - 2026-05-21 v0.2.0 发布包：新增 `packaging/build_release.py`，生成 macOS `.app` 包装器和 Windows 独立 zip 入口
 - 2026-05-21 v0.1.0 发布准备：改用 PolyForm Noncommercial License 1.0.0，补充 NOTICE/CHANGELOG，并明确当前为源码启动版

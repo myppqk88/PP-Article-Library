@@ -132,7 +132,27 @@ def build_macos_app(package_dir: Path, version: str) -> None:
         r'''
         #!/bin/zsh
         set -u
+
+        BIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+        LAUNCHER="$BIN_DIR/../Resources/launch_in_terminal.command"
+
+        if [ ! -x "$LAUNCHER" ]; then
+          /usr/bin/osascript -e 'display dialog "启动文件缺失，请重新下载 macOS 版本。" buttons {"OK"} default button "OK" with title "PP Article Library"' >/dev/null 2>&1 || true
+          exit 1
+        fi
+
+        /usr/bin/open -a Terminal "$LAUNCHER"
+        ''',
+        executable=True,
+    )
+
+    write_text(
+        resources / "launch_in_terminal.command",
+        r'''
+        #!/bin/zsh
+        set -u
         unsetopt BG_NICE 2>/dev/null || true
+        setopt NO_BG_NICE 2>/dev/null || true
 
         BIN_DIR="$(cd "$(dirname "$0")" && pwd)"
         PROJECT_ROOT="$(cd "$BIN_DIR/../../.." && pwd)"
@@ -143,12 +163,19 @@ def build_macos_app(package_dir: Path, version: str) -> None:
         LOG_FILE="$LOG_DIR/pp-article-library-$(date +%Y%m%d-%H%M%S).log"
         ln -sf "$LOG_FILE" "$LOG_DIR/latest.log"
 
+        exec > >(/usr/bin/tee -a "$LOG_FILE") 2>&1
+
+        clear
+        echo "============================================================"
+        echo "PP Article Library"
+        echo "============================================================"
+        echo
+        echo "这个窗口显示启动进度。工作台运行期间请不要关闭它。"
+        echo "日志也会保存到：$LOG_FILE"
+        echo
+
         dialog() {
           /usr/bin/osascript -e "display dialog \"$1\" buttons {\"OK\"} default button \"OK\" with title \"PP Article Library\"" >/dev/null 2>&1 || true
-        }
-
-        notify() {
-          /usr/bin/osascript -e "display notification \"$1\" with title \"PP Article Library\"" >/dev/null 2>&1 || true
         }
 
         find_python() {
@@ -172,48 +199,55 @@ def build_macos_app(package_dir: Path, version: str) -> None:
           return 1
         }
 
+        pause_on_error() {
+          echo
+          echo "启动失败。请把上面的报错或日志文件发给维护者。"
+          echo "按任意键关闭这个窗口。"
+          read -k 1 _unused_key 2>/dev/null || true
+        }
+
+        echo "[1/4] 正在查找 Python 3..."
         PYTHON_BIN="$(find_python || true)"
         if [ -z "$PYTHON_BIN" ]; then
+          echo
+          echo "[错误] 没有找到 Python 3。请先安装 Python 3.10+，然后重新打开。"
+          /usr/bin/open "https://www.python.org/downloads/macos/" >/dev/null 2>&1 || true
           dialog "没有找到 Python 3。请先安装 Python 3.10+，然后重新打开 PP Article Library。"
-          /usr/bin/open "https://www.python.org/downloads/macos/"
+          pause_on_error
           exit 1
         fi
+        echo "找到 Python：$PYTHON_BIN"
+        echo
 
-        notify "正在启动。首次运行会自动安装依赖，可能需要几分钟。"
-        {
-          echo "[$(date)] Launching PP Article Library"
-          echo "Project root: $PROJECT_ROOT"
-          echo "Python: $PYTHON_BIN"
-          "$PYTHON_BIN" scripts/check_deps.py
-          deps_status=$?
-          if [ "$deps_status" -ne 0 ]; then
-            echo "Dependency check failed: $deps_status"
-            exit "$deps_status"
-          fi
-
-          "$PYTHON_BIN" scripts/server.py --no-browser &
-          SERVER_PID=$!
-          URL="http://127.0.0.1:8765"
-          for i in {1..80}; do
-            if /usr/bin/curl -fsS "$URL/api/config" >/dev/null 2>&1; then
-              /usr/bin/open "$URL" >/dev/null 2>&1 || true
-              break
-            fi
-            if ! /bin/kill -0 "$SERVER_PID" >/dev/null 2>&1; then
-              wait "$SERVER_PID"
-              exit $?
-            fi
-            sleep 0.25
-          done
-          wait "$SERVER_PID"
-        } >>"$LOG_FILE" 2>&1
-
-        exit_status=$?
-        if [ "$exit_status" -ne 0 ]; then
-          dialog "启动失败。日志位置：$LOG_FILE"
-          /usr/bin/open -R "$LOG_FILE" >/dev/null 2>&1 || true
+        echo "[2/4] 正在检查必需依赖..."
+        echo "首次运行可能会下载并安装 PyYAML、requests、openpyxl、PyMuPDF、pypdf。"
+        echo "这些会安装到本文件夹的 .deps_macos，不会改你的系统 Python。"
+        echo
+        "$PYTHON_BIN" scripts/check_deps.py
+        deps_status=$?
+        if [ "$deps_status" -ne 0 ]; then
+          echo
+          echo "[错误] 依赖安装失败，退出码：$deps_status"
+          pause_on_error
+          exit "$deps_status"
         fi
-        exit "$exit_status"
+        echo
+
+        URL="http://127.0.0.1:8765"
+        if /usr/bin/curl -fsS "$URL/api/config" >/dev/null 2>&1; then
+          echo "[3/4] 检测到工作台已经在运行。"
+          /usr/bin/open "$URL" >/dev/null 2>&1 || true
+          echo "[4/4] 浏览器已打开。可以关闭这个重复启动窗口。"
+          sleep 3
+          exit 0
+        fi
+
+        echo "[3/4] 正在启动本地服务..."
+        echo "[4/4] 服务启动后会自动打开浏览器。"
+        echo
+        echo "工作台运行期间请保留这个窗口；关闭窗口会停止本地服务。"
+        echo
+        exec "$PYTHON_BIN" scripts/server.py
         ''',
         executable=True,
     )
@@ -227,7 +261,10 @@ def write_package_notes(package_dir: Path, platform: str, version: str) -> None:
 
         1. 解压这个文件夹。
         2. 双击 PP Article Library.app。
-        3. 如果 macOS 提示“无法验证”并且不给“打开”按钮：
+        3. App 会打开一个“终端 / Terminal”进度窗口：
+           - 首次运行会在这里显示依赖安装进度。
+           - 看到浏览器打开后，不要关闭这个窗口；关闭窗口会停止本地服务。
+        4. 如果 macOS 提示“无法验证”并且不给“打开”按钮：
            - 点“完成”，不要点“移到废纸篓”。
            - 打开“终端 / Terminal”。
            - 输入下面这句，末尾留一个空格：
@@ -240,6 +277,8 @@ def write_package_notes(package_dir: Path, platform: str, version: str) -> None:
         说明：
         - 这个版本没有 Apple Developer 付费公证，所以 macOS 可能拦截浏览器下载的 App。
         - 上面的命令只是在本机移除“来自互联网下载”的隔离标记。
+        - 首次运行只自动安装必需依赖：PyYAML、requests、openpyxl、PyMuPDF、pypdf。
+          扫描件 OCR 的 rapidocr / Pillow 不会默认安装，可在需要时再手动安装。
         - 所有 PDF、笔记、API key 都保存在本文件夹内，不会上传到 GitHub。
         - 如果启动失败，请查看 .local/logs/latest.log。
         """
@@ -388,7 +427,7 @@ def build(version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build PP Article Library release ZIPs.")
-    parser.add_argument("--version", default="v0.2.1")
+    parser.add_argument("--version", default="v0.2.2")
     args = parser.parse_args()
     build(args.version)
 

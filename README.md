@@ -5,11 +5,11 @@
 - Python 3 + 原生浏览器 JS，零云依赖（除非你自己接 AI provider）
 - 所有数据存在本地文件夹，可以放云盘里跨设备同步
 - 支持 macOS / Windows / Linux（任何能跑 Python 3 + Chrome 系浏览器的系统都行）
-- 当前 `v0.2.1` 提供 macOS / Windows 分开的下载包；源码启动器仍保留给高级用户
+- 当前 `v0.2.2` 提供 macOS / Windows 分开的下载包；源码启动器仍保留给高级用户
 
 > **macOS 用户请先看这里**
 >
-> `v0.2.1` 的 Mac 包做了本机 ad-hoc 签名，但没有 Apple Developer 付费公证。从 GitHub 下载后，macOS 仍可能提示：
+> `v0.2.2` 的 Mac 包做了本机 ad-hoc 签名，但没有 Apple Developer 付费公证。从 GitHub 下载后，macOS 仍可能提示：
 >
 > `Apple 无法验证“PP Article Library.app”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。`
 >
@@ -33,21 +33,23 @@
 
 1. 打开 [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases)
 2. 下载对应系统：
-   - macOS：`PP-Article-Library-v0.2.1-macOS.zip`
-   - Windows：`PP-Article-Library-v0.2.1-Windows.zip`
+   - macOS：`PP-Article-Library-v0.2.2-macOS.zip`
+   - Windows：`PP-Article-Library-v0.2.2-Windows.zip`
 3. 解压到一个新文件夹
 4. 进文件夹，双击：
    - macOS：`PP Article Library.app`
    - Windows：`Start PP Article Library.bat`
 5. 首次启动会自动：
    - 探测系统 Python（PATH / Anaconda / 官方安装路径）
-   - pip install -r requirements.txt（含 OCR 引擎，~50MB）
+   - 安装必需 Python 包：PyYAML、requests、openpyxl、PyMuPDF、pypdf
    - 从 settings.example.yaml 复制出 settings.yaml
    - 从 .env.example 复制出 .env
    - 建好所有数据目录（library/、citations/、inbox/ 等）
 6. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
 
-`v0.2.1` 暂不内置 Python。多数研究者电脑里已经有 Python / Anaconda；如果没有，先安装 Python 3.10+，Windows 安装时勾选 `Add Python to PATH`。
+macOS 会弹出一个“终端 / Terminal”进度窗口，能看到 pip 下载和安装过程。看到浏览器打开后，不要关闭这个终端窗口；关闭窗口会停止本地服务。
+
+`v0.2.2` 暂不内置 Python。多数研究者电脑里已经有 Python / Anaconda；如果没有，先安装 Python 3.10+，Windows 安装时勾选 `Add Python to PATH`。
 
 路径说明：工作台内部统一把 PDF / 笔记路径保存成 `library/pdfs/xxx.pdf` 这种 `/` 写法。Windows 和 macOS 都能读取；旧数据里如果混有 Windows 的 `\` 路径，启动后也会自动兼容，所以跨系统迁移时不会因为路径分隔符不同而找不到 PDF。
 
@@ -68,7 +70,7 @@
 
    xattr -dr com.apple.quarantine
 
-3. 把整个解压后的 PP-Article-Library-v0.2.1-macOS 文件夹拖进终端窗口
+3. 把整个解压后的 PP-Article-Library-v0.2.2-macOS 文件夹拖进终端窗口
 4. 按回车
 5. 再双击 PP Article Library.app
 ```
@@ -76,10 +78,10 @@
 如果你就是解压在“下载”目录，也可以直接复制这一整句：
 
 ```bash
-xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.1-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.1-macOS/PP Article Library.app"
+xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.2-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.2-macOS/PP Article Library.app"
 ```
 
-`v0.2.1` 的 Mac 包里也有一份 `MAC_FIRST_RUN.txt`，写的就是这几步。由于没有 Apple Developer 付费公证，第一次安全提示无法完全消除；这不是代码能在免费未公证状态下绕过的东西。
+`v0.2.2` 的 Mac 包里也有一份 `MAC_FIRST_RUN.txt`，写的就是这几步。由于没有 Apple Developer 付费公证，第一次安全提示无法完全消除；这不是代码能在免费未公证状态下绕过的东西。
 
 ### Git 用户
 

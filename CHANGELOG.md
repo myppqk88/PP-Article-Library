@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.2 - 2026-05-21
+
+- Changed the macOS `.app` launcher to open a visible Terminal progress window.
+- Clarified that first launch installs only the required Python packages, not the optional OCR stack.
+- Updated macOS package notes so users know to keep the progress window open while the local server is running.
+
 ## v0.2.1 - 2026-05-21
 
 - Corrected macOS first-run docs: right-click open is not reliable on every macOS version for unsigned downloads.

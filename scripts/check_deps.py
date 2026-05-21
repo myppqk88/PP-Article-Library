@@ -154,6 +154,8 @@ def main() -> int:
     for mod, desc in missing:
         print(f"  · {mod}  ({desc})")
     print("=" * 60)
+    print("说明：通常只有第一次会慢一些，主要时间花在下载 / 安装 PyMuPDF 等 PDF 处理包。")
+    print("这些包会装进项目本地 .deps* 目录，不会修改系统 Python。")
     print()
 
     result_code = _install_required()
