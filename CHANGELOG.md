@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1 - 2026-05-21
+
+- Corrected macOS first-run docs: right-click open is not reliable on every macOS version for unsigned downloads.
+- Added `MAC_FIRST_RUN.txt` to the macOS ZIP with the exact quarantine-removal fallback.
+- Updated release packaging to use dynamic version numbers and attempt ad-hoc signing for the macOS `.app`.
+
 ## v0.2.0 - 2026-05-21
 
 - Added release packaging for separate macOS and Windows ZIP downloads.

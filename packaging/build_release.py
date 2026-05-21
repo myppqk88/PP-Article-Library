@@ -64,7 +64,31 @@ def write_text(path: Path, content: str, executable: bool = False) -> None:
         path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def build_macos_app(package_dir: Path) -> None:
+def version_number(version: str) -> str:
+    return version[1:] if version.startswith("v") else version
+
+
+def ad_hoc_sign_macos_app(app_dir: Path) -> None:
+    codesign = shutil.which("codesign")
+    if not codesign:
+        print("Warning: codesign not found; macOS app will remain unsigned.")
+        return
+    try:
+        subprocess.run(
+            [codesign, "--force", "--deep", "--sign", "-", str(app_dir)],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        print("Warning: ad-hoc codesign failed; continuing without a signature.")
+        if exc.stderr:
+            print(exc.stderr.strip())
+
+
+def build_macos_app(package_dir: Path, version: str) -> None:
     app_dir = package_dir / f"{APP_NAME}.app"
     contents = app_dir / "Contents"
     macos = contents / "MacOS"
@@ -87,9 +111,9 @@ def build_macos_app(package_dir: Path) -> None:
           <key>CFBundleIdentifier</key>
           <string>io.github.myppqk88.pp-article-library</string>
           <key>CFBundleVersion</key>
-          <string>0.2.0</string>
+          <string>{version_number(version)}</string>
           <key>CFBundleShortVersionString</key>
-          <string>0.2.0</string>
+          <string>{version_number(version)}</string>
           <key>CFBundleExecutable</key>
           <string>{APP_NAME}</string>
           <key>CFBundlePackageType</key>
@@ -193,29 +217,57 @@ def build_macos_app(package_dir: Path) -> None:
         ''',
         executable=True,
     )
+    ad_hoc_sign_macos_app(app_dir)
 
 
-def write_package_notes(package_dir: Path, platform: str) -> None:
+def write_package_notes(package_dir: Path, platform: str, version: str) -> None:
     if platform == "macos":
-        body = """
-        PP Article Library v0.2.0 macOS
+        body = f"""
+        PP Article Library {version} macOS
 
         1. 解压这个文件夹。
         2. 双击 PP Article Library.app。
-        3. 如果 macOS 提示无法验证开发者：
+        3. 如果 macOS 提示“无法验证”并且不给“打开”按钮：
            - 点“完成”，不要点“移到废纸篓”。
-           - 右键 / 双指点按 PP Article Library.app。
-           - 选择“打开”。
-           - 之后浏览器会自动打开本地工作台。
+           - 打开“终端 / Terminal”。
+           - 输入下面这句，末尾留一个空格：
+
+             xattr -dr com.apple.quarantine
+
+           - 把整个解压后的文件夹拖进终端窗口，按回车。
+           - 再双击 PP Article Library.app。
 
         说明：
-        - 这个版本没有 Apple 付费签名，所以第一次打开仍可能有安全提示。
+        - 这个版本没有 Apple Developer 付费公证，所以 macOS 可能拦截浏览器下载的 App。
+        - 上面的命令只是在本机移除“来自互联网下载”的隔离标记。
         - 所有 PDF、笔记、API key 都保存在本文件夹内，不会上传到 GitHub。
         - 如果启动失败，请查看 .local/logs/latest.log。
         """
+        mac_first_run = f"""
+        macOS 第一次打开如果被拦截
+
+        这是免费未公证 App 的 macOS 安全提醒。它不代表 PP Article Library 会上传你的
+        PDF、笔记或 API key。完全免提醒需要 Apple Developer 付费签名和公证。
+
+        最短处理方式：
+
+        1. 打开“终端 / Terminal”。
+        2. 输入下面这句，末尾留一个空格：
+
+           xattr -dr com.apple.quarantine
+
+        3. 把整个 `{REPO_NAME}-{version}-macOS` 文件夹拖进终端窗口。
+        4. 按回车。
+        5. 再双击 `PP Article Library.app`。
+
+        如果你把文件夹放在“下载”目录，通常也可以直接复制这一整句：
+
+        xattr -dr com.apple.quarantine "$HOME/Downloads/{REPO_NAME}-{version}-macOS" && open "$HOME/Downloads/{REPO_NAME}-{version}-macOS/PP Article Library.app"
+        """
+        write_text(package_dir / "MAC_FIRST_RUN.txt", mac_first_run)
     else:
-        body = """
-        PP Article Library v0.2.0 Windows
+        body = f"""
+        PP Article Library {version} Windows
 
         1. 解压这个文件夹。
         2. 双击 Start PP Article Library.bat。
@@ -319,12 +371,12 @@ def build(version: str) -> None:
             shutil.rmtree(path)
 
     copy_public_tree(mac_dir, "macos")
-    build_macos_app(mac_dir)
-    write_package_notes(mac_dir, "macos")
+    build_macos_app(mac_dir, version)
+    write_package_notes(mac_dir, "macos", version)
 
     copy_public_tree(win_dir, "windows")
     build_windows_launcher(win_dir)
-    write_package_notes(win_dir, "windows")
+    write_package_notes(win_dir, "windows", version)
 
     zip_dir(mac_dir, DIST / f"{REPO_NAME}-{version}-macOS.zip")
     zip_dir(win_dir, DIST / f"{REPO_NAME}-{version}-Windows.zip")
@@ -336,7 +388,7 @@ def build(version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build PP Article Library release ZIPs.")
-    parser.add_argument("--version", default="v0.2.0")
+    parser.add_argument("--version", default="v0.2.1")
     args = parser.parse_args()
     build(args.version)
 

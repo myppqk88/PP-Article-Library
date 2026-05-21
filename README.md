@@ -5,15 +5,15 @@
 - Python 3 + 原生浏览器 JS，零云依赖（除非你自己接 AI provider）
 - 所有数据存在本地文件夹，可以放云盘里跨设备同步
 - 支持 macOS / Windows / Linux（任何能跑 Python 3 + Chrome 系浏览器的系统都行）
-- 当前 `v0.2.0` 提供 macOS / Windows 分开的下载包；源码启动器仍保留给高级用户
+- 当前 `v0.2.1` 提供 macOS / Windows 分开的下载包；源码启动器仍保留给高级用户
 
 > **macOS 用户请先看这里**
 >
-> `v0.2.0` 的 Mac 包是未付费签名的 `.app`。从 GitHub 下载后，macOS 可能提示：
+> `v0.2.1` 的 Mac 包做了本机 ad-hoc 签名，但没有 Apple Developer 付费公证。从 GitHub 下载后，macOS 仍可能提示：
 >
 > `Apple 无法验证“PP Article Library.app”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。`
 >
-> 这是 macOS 对未签名网络下载 App 的安全提醒，不代表本项目会上传你的 PDF、笔记或 API key。第一次请用「右键 / 双指点按 → 打开」。完全免提示需要 Apple Developer 付费签名，本项目暂不承担该成本。
+> 这是 macOS 对未公证网络下载 App 的安全提醒，不代表本项目会上传你的 PDF、笔记或 API key。完全免提示需要 Apple Developer 付费签名和公证，本项目暂不承担该成本。免费版如果被拦，请按下面「macOS 第一次打开」处理。
 
 ## 适合你吗？
 
@@ -31,15 +31,14 @@
 
 ### 普通用户下载
 
-```
 1. 打开 [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases)
 2. 下载对应系统：
-   - macOS：PP-Article-Library-v0.2.0-macOS.zip
-   - Windows：PP-Article-Library-v0.2.0-Windows.zip
+   - macOS：`PP-Article-Library-v0.2.1-macOS.zip`
+   - Windows：`PP-Article-Library-v0.2.1-Windows.zip`
 3. 解压到一个新文件夹
 4. 进文件夹，双击：
-   - macOS：PP Article Library.app
-   - Windows：Start PP Article Library.bat
+   - macOS：`PP Article Library.app`
+   - Windows：`Start PP Article Library.bat`
 5. 首次启动会自动：
    - 探测系统 Python（PATH / Anaconda / 官方安装路径）
    - pip install -r requirements.txt（含 OCR 引擎，~50MB）
@@ -47,35 +46,40 @@
    - 从 .env.example 复制出 .env
    - 建好所有数据目录（library/、citations/、inbox/ 等）
 6. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
-```
 
-`v0.2.0` 暂不内置 Python。多数研究者电脑里已经有 Python / Anaconda；如果没有，先安装 Python 3.10+，Windows 安装时勾选 `Add Python to PATH`。
+`v0.2.1` 暂不内置 Python。多数研究者电脑里已经有 Python / Anaconda；如果没有，先安装 Python 3.10+，Windows 安装时勾选 `Add Python to PATH`。
 
 路径说明：工作台内部统一把 PDF / 笔记路径保存成 `library/pdfs/xxx.pdf` 这种 `/` 写法。Windows 和 macOS 都能读取；旧数据里如果混有 Windows 的 `\` 路径，启动后也会自动兼容，所以跨系统迁移时不会因为路径分隔符不同而找不到 PDF。
 
 ### macOS 第一次打开
 
-如果直接双击出现黄色警告：
+如果直接双击出现黄色警告，先试这个：
 
 1. 点「完成」，不要点「移到废纸篓」。
 2. 回到 Finder，对 `PP Article Library.app` 右键 / 双指点按。
 3. 选择「打开」。
-4. 如果仍然弹窗，按系统提示选择「打开」或到「系统设置 → 隐私与安全性」里允许打开。
+4. 如果系统设置里出现「仍要打开 / Open Anyway」，也可以在那里允许一次。
 
-如果你用的是源码版 `.command`，右键打开仍失败，再用终端执行一次：
+如果仍然不行，说明 macOS 对这个浏览器下载包加了 quarantine 隔离标记。免费未公证 App 无法在运行前自己解除这个标记，需要你在本机确认一次。最短操作如下，不用 `cd`：
 
-```bash
-chmod +x *.command
-xattr -dr com.apple.quarantine .
+```text
+1. 打开“终端 / Terminal”
+2. 输入下面这句，末尾留一个空格：
+
+   xattr -dr com.apple.quarantine
+
+3. 把整个解压后的 PP-Article-Library-v0.2.1-macOS 文件夹拖进终端窗口
+4. 按回车
+5. 再双击 PP Article Library.app
 ```
 
-然后再运行：
+如果你就是解压在“下载”目录，也可以直接复制这一整句：
 
 ```bash
-./打开文献工作台.command
+xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.1-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.1-macOS/PP Article Library.app"
 ```
 
-`v0.2.0` 已经把 Mac 流程简化到「下载 → 解压 → 右键打开一次」。由于没有 Apple Developer 付费签名，第一次安全提示无法完全消除。
+`v0.2.1` 的 Mac 包里也有一份 `MAC_FIRST_RUN.txt`，写的就是这几步。由于没有 Apple Developer 付费公证，第一次安全提示无法完全消除；这不是代码能在免费未公证状态下绕过的东西。
 
 ### Git 用户
 
