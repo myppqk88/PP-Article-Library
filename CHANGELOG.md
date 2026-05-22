@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+## v0.2.3 - 2026-05-22
+
+- Moved Citation management out of Settings into a dedicated modal opened from the `+` button beside the top-bar "帮我引用" selector.
+- Added the public README logo and visual guide images.
+- Reworked README into a Chinese/English GitHub homepage and replaced macOS first-open trial steps with the direct quarantine-removal command.
+- Added AI one-sentence summaries for papers and refreshed the reader/meta/note interface polish.
+- Refreshed EasyScholar journal-rank formatting and automatic rank refresh during paper organization.
+
 ## v0.2.2 - 2026-05-21
 
 - Changed the macOS `.app` launcher to open a visible Terminal progress window.

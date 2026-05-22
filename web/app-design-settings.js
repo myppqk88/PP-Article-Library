@@ -31,11 +31,10 @@
     prompts:     { group: "AI 调用",   label: "提示词与模板", subtitle: "「整理新文献」时调用的提示词；笔记 Markdown 模板。" },
     easyscholar: { group: "文献数据", label: "期刊等级源",   subtitle: "EasyScholar 自动查询期刊等级。结果写入「期刊等级_自动」字段；你手填的「期刊等级_人工」永不被覆盖。" },
     journals:    { group: "文献数据", label: "追踪期刊库",   subtitle: "你关注的期刊清单。整理新文献时会自动匹配并打星 / 写「追踪期刊领域」标签。" },
-    citations:   { group: "文献数据", label: "Citation 文件", subtitle: "为每篇正在写的论文建立一个 citation 文件，AI「帮我引用」时基于其顶部「写作上下文」生成引用建议。" },
     ui:          { group: "界面",     label: "面板与显示",   subtitle: "右侧 inspector 显示哪些 tab。" },
   };
 
-  const NAV_ORDER = ["model", "translation", "ocr", "vision", "prompts", "easyscholar", "journals", "citations", "ui"];
+  const NAV_ORDER = ["model", "translation", "ocr", "vision", "prompts", "easyscholar", "journals", "ui"];
 
   // ============================================================
   // 1. Styles
@@ -319,8 +318,13 @@
         border-radius: 50%;
         background: var(--dc-muted-soft);
       }
-      .dc-settings-footer .dc-footer-state.dirty::before { background: var(--dc-warn); }
-      .dc-settings-footer .dc-footer-state.saved::before { background: var(--dc-ok); }
+      .dc-settings-footer .dc-footer-state.dirty::before { background: var(--dc-warn, #c98a3c); }
+      .dc-settings-footer .dc-footer-state.dirty { color: var(--dc-warn, #c98a3c); }
+      .dc-settings-footer .dc-footer-state.saving::before { background: var(--dc-accent, #cc785c); }
+      .dc-settings-footer .dc-footer-state.saved::before { background: var(--dc-ok, #4f7d52); }
+      .dc-settings-footer .dc-footer-state.saved { color: var(--dc-ok, #4f7d52); }
+      .dc-settings-footer .dc-footer-state.error::before { background: var(--dc-danger, #a04545); }
+      .dc-settings-footer .dc-footer-state.error { color: var(--dc-danger, #a04545); }
       .dc-settings-footer .dc-footer-spacer { flex: 1; }
 
       /* All settings-section contents inherit nice spacing inside detail pane */
@@ -349,10 +353,7 @@
       const closeBtn = oldHead.querySelector("#closeSettingsBtn");
       oldHead.innerHTML = "";
       const left = document.createElement("div");
-      left.innerHTML = `
-        <h2>设置</h2>
-        <p class="dc-settings-subtitle">改动写入 <code style="font-family:var(--dc-font-mono);font-size:11px">config/settings.yaml</code> 或 <code style="font-family:var(--dc-font-mono);font-size:11px">.env</code>，本地保存 · 不需重启</p>
-      `;
+      left.innerHTML = `<h2>设置</h2>`;
       const right = document.createElement("div");
       right.className = "dc-settings-head-right";
       const search = document.createElement("input");
@@ -441,7 +442,7 @@
     const footer = document.createElement("div");
     footer.className = "dc-settings-footer";
     footer.innerHTML = `
-      <span class="dc-footer-state saved" id="dcSettingsFooterState">未修改</span>
+      <span class="dc-footer-state" id="dcSettingsFooterState">未修改</span>
       <span class="dc-footer-spacer"></span>
       <button class="dc-btn" id="dcSettingsCancelBtn" type="button">取消</button>
       <button class="dc-btn dc-btn-primary" id="dcSettingsSaveBtn" type="button"
@@ -459,8 +460,8 @@
     injectConnectionCard();
 
     // 7. Wire mark-dirty on any input change inside detail
-    detail.addEventListener("input", () => setDirty(true), true);
-    detail.addEventListener("change", () => setDirty(true), true);
+    detail.addEventListener("input", () => setState("dirty"), true);
+    detail.addEventListener("change", () => setState("dirty"), true);
 
     // 8. Search filter (very simple: hide nav items whose label or section
     //    text doesn't match)
@@ -596,47 +597,97 @@
     if (key === "model") refreshConnInfo();
   }
 
-  function setDirty(d) {
-    dirty = d;
+  // ── 页脚保存信号：5 个状态 ───────────────────────────────────────────
+  //   pristine 未修改 · dirty 已修改·未保存 · saving 保存中…
+  //   · saved 已保存 ✓ · error 保存失败
+  // 保存按钮点下后进 saving，再盯住该 section 的状态文字真正落定成
+  // saved / error —— 不再「点完就乐观地写回未修改」。
+  let footerState = "pristine";
+  const FOOTER_STATES = {
+    pristine: { cls: "", text: "未修改" },
+    dirty: { cls: "dirty", text: "已修改 · 未保存" },
+    saving: { cls: "saving", text: "保存中…" },
+    saved: { cls: "saved", text: "已保存 ✓" },
+    error: { cls: "error", text: "保存失败" },
+  };
+
+  function setState(name, customText) {
+    footerState = FOOTER_STATES[name] ? name : "pristine";
+    dirty = footerState === "dirty";
     const el = document.getElementById("dcSettingsFooterState");
     if (!el) return;
-    if (d) {
-      el.className = "dc-footer-state dirty";
-      el.textContent = "已修改 · 未保存";
-    } else {
-      el.className = "dc-footer-state saved";
-      el.textContent = "未修改";
-    }
+    const s = FOOTER_STATES[footerState];
+    el.className = "dc-footer-state " + s.cls;
+    el.textContent = customText || s.text;
   }
 
-  async function saveAndTest() {
-    // Save the active section. Despite the legacy name, we no longer auto-test —
-    // the user was getting confused by tests firing on every save, and the conn
-    // card wasn't reflecting the newly-picked provider until the save finished
-    // anyway. Test is now manual via the conn card's 「重新测试」 button.
+  // 各 section 的「原生保存按钮」与「状态文字 span」
+  const SAVE_BTN_ID = {
+    model: "saveSettingsBtn",
+    translation: "saveTranslationBtn",
+    ocr: "saveOcrBtn",
+    vision: "saveVisionBtn",
+    prompts: "savePromptsBtn",
+    easyscholar: "saveEasyscholarBtn",
+    journals: "saveJournalsBtn",
+    ui: "saveUiBtn",
+  };
+  const STATUS_EL_ID = {
+    model: "settingsStatus",
+    translation: "translationStatus",
+    ocr: "ocrStatus",
+    vision: "visionStatus",
+    prompts: "promptsStatus",
+    easyscholar: "easyscholarStatus",
+    journals: "journalsStatus",
+    ui: "uiSaveStatus",
+  };
+
+  // 点了保存后盯住该 section 的状态 span，落定成 saved / error。
+  function observeSaveResult(statusId) {
+    const statusEl = statusId ? document.getElementById(statusId) : null;
+    let obs = null;
+    let timer = null;
+    let settled = false;
+    const settle = (ok, msg) => {
+      if (settled) return;
+      settled = true;
+      if (obs) obs.disconnect();
+      if (timer) clearTimeout(timer);
+      setState(ok ? "saved" : "error", ok ? "" : (msg ? "保存失败：" + msg : "保存失败"));
+    };
+    if (!statusEl) {
+      // 该 section 没有状态 span —— 保存按钮已点，乐观按成功处理
+      timer = setTimeout(() => settle(true), 600);
+      return;
+    }
+    const check = () => {
+      const t = (statusEl.textContent || "").trim();
+      if (!t || t.includes("保存中")) return;        // 还在进行
+      if (t.includes("已保存")) settle(true);
+      else settle(false, t);                          // 其余非空文本视作错误
+    };
+    obs = new MutationObserver(check);
+    obs.observe(statusEl, { childList: true, characterData: true, subtree: true });
+    timer = setTimeout(() => settle(true), 6000);     // 兜底：本地写文件极快
+    check();
+  }
+
+  function saveAndTest() {
+    // 保存当前 section。不自动测试 —— 测试请用连接卡的「重新测试」按钮。
     const activeWrap = Array.from(document.querySelectorAll(".dc-settings-section-wrap"))
       .find((w) => w.style.display !== "none");
     const key = activeWrap?.dataset?.section;
-    const saveBtnId = ({
-      model: "saveSettingsBtn",
-      translation: "saveTranslationBtn",
-      ocr: "saveOcrBtn",
-      vision: "saveVisionBtn",
-      prompts: "savePromptsBtn",
-      easyscholar: "saveEasyscholarBtn",
-      journals: "saveJournalsBtn",
-      citations: "saveCitationBtn",
-      ui: "saveUiBtn",
-    })[key];
-    if (saveBtnId) {
-      const btn = document.getElementById(saveBtnId);
-      if (btn) {
-        btn.click();
-        setDirty(false);
-      }
-    }
-    // If we're on the model tab, refresh the conn card display so the user sees
-    // the freshly-saved provider/model appear at the top (without auto-pinging).
+    const btn = SAVE_BTN_ID[key] && document.getElementById(SAVE_BTN_ID[key]);
+    if (!btn) return;
+    const statusId = STATUS_EL_ID[key];
+    // 清掉上一次保存留下的状态文字，避免被误判成本次结果
+    const statusEl = statusId && document.getElementById(statusId);
+    if (statusEl) statusEl.textContent = "";
+    setState("saving");
+    btn.click();
+    observeSaveResult(statusId);
+    // model tab：保存后刷新连接卡顶部的 provider/model 显示（不自动 ping）
     if (key === "model") {
       setTimeout(refreshConnInfo, 600);
     }
@@ -666,7 +717,7 @@
       if (row) row.className = "dc-conn-status-row unknown";
       if (label) label.textContent = "尚未测试";
       if (meta) meta.textContent = "已切换 provider，点右侧「重新测试」检查连接";
-      setDirty(false);
+      setState("saved");
       btn.textContent = "已切换 ✓";
       setTimeout(() => { btn.innerHTML = originalHTML; btn.disabled = false; }, 1400);
     } catch (e) {

@@ -2020,6 +2020,8 @@ class LiteratureHandler(BaseHTTPRequestHandler):
                 return self.api_reprocess_paper()
             if parsed.path == "/api/paper/help-read":
                 return self.api_help_read_paper()
+            if parsed.path == "/api/paper/gen-summary":
+                return self.api_gen_summary()
             if parsed.path == "/api/citation":
                 return self.api_create_citation()
             if parsed.path == "/api/citation/save":
@@ -2252,6 +2254,7 @@ class LiteratureHandler(BaseHTTPRequestHandler):
             "阅读状态",
             "我的备注",
             "期刊等级_人工",
+            "AI一句话总结",
             # 注意：期刊等级_自动 不能从前端写入，只能 EasyScholar 后端写
         }
         rows = load_rows()
@@ -2296,7 +2299,7 @@ class LiteratureHandler(BaseHTTPRequestHandler):
 
     def api_save_citation(self) -> None:
         """Persist the full markdown body for an existing citation file
-        (used by the in-app editor in Settings → 引用文件管理)."""
+        (used by the in-app Citation 管理 editor)."""
         data = read_body(self)
         name = str(data.get("name", "")).strip()
         raw = str(data.get("raw", ""))
@@ -2468,6 +2471,48 @@ class LiteratureHandler(BaseHTTPRequestHandler):
                 "note": rendered,
                 "model": settings.get("api", {}).get("model", ""),
             }
+        )
+
+    def api_gen_summary(self) -> None:
+        """为单篇文献用 AI 生成「一句话总结」，写回 AI一句话总结 字段。
+
+        只读取该篇 PDF 的全文文本喂给当前 provider，要求输出一句中文概括。
+        不动分类、不动笔记、不动其它任何字段。
+        """
+        data = read_body(self)
+        paper_id = str(data.get("paper_id", "")).strip()
+        if not paper_id:
+            return self.send_error_json("missing paper_id")
+        rows = load_rows()
+        row = find_row(paper_id, rows)
+        if not row:
+            return self.send_error_json("paper not found", HTTPStatus.NOT_FOUND)
+        try:
+            pdf_text = cached_or_extract_full_text(row)
+        except Exception as exc:
+            traceback.print_exc()
+            return self.send_error_json(f"PDF 文本提取失败：{exc}")
+        if not (pdf_text or "").strip():
+            return self.send_error_json(
+                "提取不到 PDF 文本（可能是扫描件且未开启 OCR），无法生成总结"
+            )
+        question = (
+            "请用一句简洁的中文（40 字以内）概括这篇论文的核心研究主题与主要发现。"
+            "只输出这一句话本身，不要加任何前缀、引号、编号或解释。"
+        )
+        try:
+            answer, _usage = call_chat_ai(row, question, "", pdf_text, history=[])
+        except Exception as exc:
+            traceback.print_exc()
+            return self.send_error_json(f"AI 生成失败：{exc}")
+        summary = " ".join(str(answer or "").split()).strip()
+        summary = summary.strip("「」“”\"'　 ")
+        if not summary:
+            return self.send_error_json("AI 返回为空，请重试")
+        row["AI一句话总结"] = summary
+        save_rows(rows)
+        return self.send_json(
+            {"ok": True, "summary": summary, "paper": paper_payload(row)}
         )
 
     def api_reprocess_paper(self) -> None:

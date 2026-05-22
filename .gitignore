@@ -44,6 +44,11 @@ citations/*.md
 manuscript_v/*
 
 # 临时材料
+1.zip
+web - 副本/
+项目介绍/
+scripts/_reformat_journal_ranks.py
+scripts/_resync_renamed_category.py
 collections/by_category/*
 !collections/by_category/.gitkeep
 exports/*

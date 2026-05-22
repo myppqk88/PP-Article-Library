@@ -403,6 +403,10 @@ CLI + Library 双入口：
 
 > 写日期 + 一句话；细节在 git commit message 里。
 
+- 2026-05-21 Citation 管理入口从设置移到顶栏「帮我引用」下拉框右侧 `+`，作为独立弹窗打开
+- 2026-05-22 GitHub 首页补充 logo 与图文导览素材，公开 README 更新为 v0.2.3 下载说明
+- 2026-05-22 Windows 端优化同步：新增一句话总结、阅读区压缩、元信息表单瘦身、笔记护眼背景和 EasyScholar 等级格式修正
+- 2026-05-21 README 重写为中英双版 GitHub 首页，macOS 首次打开直接给 `xattr` 解除隔离流程
 - 2026-05-21 README 补充 macOS 未签名下载警告与首次打开步骤，明确 v0.2.0 目标是无付费签名前提下尽量简化启动
 - 2026-05-21 v0.2.2 改 macOS `.app` 启动体验：双击后打开 Terminal 进度窗口，显示依赖安装和服务启动日志
 - 2026-05-21 v0.2.1 修正 macOS 未公证 App 说明：补充 quarantine 解除步骤、Mac 包内 `MAC_FIRST_RUN.txt`、打包时尝试 ad-hoc 签名

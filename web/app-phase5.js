@@ -394,11 +394,58 @@
     saveCategoryTree().then(renderAll);
   }
 
+  // 重命名一个分类。关键：必须走专门的 rename 接口 —— 它会同时
+  //   (1) 改 settings.yaml 里的分类树；
+  //   (2) migrate_rows_for_rename 把所有文献分类字段里的旧名换成新名。
+  // 之前这里只 POST /api/category-tree（只存树、不迁移文献），导致树里
+  // 是新名、文献里还是旧名 —— 外面的分类徽章一直不变。
+  async function renameCategoryViaApi(endpoint, payload, label) {
+    let data;
+    try {
+      const resp = await origFetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data.ok === false) {
+        alert("重命名失败：" + (data.error || `HTTP ${resp.status}`));
+        return null;
+      }
+    } catch (err) {
+      alert("重命名失败：" + err.message);
+      return null;
+    }
+    // 旧名计数清零、新名接管 —— 刷新弹窗里的计数
+    try {
+      const r = await origFetch("/api/categories");
+      if (r.ok) {
+        const d = await r.json();
+        categoryCounts = {};
+        (d.categories || []).forEach((c) => (categoryCounts[c.name] = c.count));
+      }
+    } catch (err) {
+      console.warn("[phase5] refresh counts after rename failed:", err);
+    }
+    // 通知 app.js：重载分类树 / 计数 / 文献列表 / 当前文献元信息
+    document.dispatchEvent(new CustomEvent("dc-categories-renamed"));
+    const status = document.getElementById("catSaveStatus");
+    if (status) {
+      status.textContent = `已重命名${label || ""}，同步 ${data.migrated || 0} 篇文献`;
+      setTimeout(() => { if (status) status.textContent = ""; }, 4000);
+    }
+    return data;
+  }
+
   async function renamePrimary(name) {
     const newName = prompt(`把一级分类「${name}」改名为：`, name);
     if (!newName || newName.trim() === "" || newName === name) return;
     const trimmed = newName.trim();
     if (categoryTree[trimmed]) return alert("已存在同名一级分类。");
+    const res = await renameCategoryViaApi(
+      "/api/category-tree/rename-primary", { old: name, new: trimmed }, "一级分类"
+    );
+    if (!res) return;
     categoryTree[trimmed] = categoryTree[name];
     delete categoryTree[name];
     if (draft.primaries.has(name)) {
@@ -406,7 +453,6 @@
       draft.primaries.add(trimmed);
     }
     if (focused.primary === name) focused.primary = trimmed;
-    await saveCategoryTree();
     renderAll();
   }
   async function deletePrimary(name) {
@@ -424,6 +470,11 @@
     const trimmed = newName.trim();
     const subs = categoryTree[focused.primary] || {};
     if (subs[trimmed]) return alert("已存在同名二级分类。");
+    const res = await renameCategoryViaApi(
+      "/api/category-tree/rename-secondary",
+      { primary: focused.primary, old: name, new: trimmed }, "二级分类"
+    );
+    if (!res) return;
     subs[trimmed] = subs[name];
     delete subs[name];
     if (draft.secondaries.has(name)) {
@@ -431,7 +482,6 @@
       draft.secondaries.add(trimmed);
     }
     if (focused.secondary === name) focused.secondary = trimmed;
-    await saveCategoryTree();
     renderAll();
   }
   async function deleteSecondary(name) {
@@ -451,13 +501,18 @@
     const trimmed = newName.trim();
     let arr = (categoryTree[focused.primary][focused.secondary] || []);
     if (arr.includes(trimmed)) return alert("已存在同名三级分类。");
+    const res = await renameCategoryViaApi(
+      "/api/category-tree/rename-tertiary",
+      { primary: focused.primary, secondary: focused.secondary, old: name, new: trimmed },
+      "三级分类"
+    );
+    if (!res) return;
     arr = arr.map((x) => (x === name ? trimmed : x));
     categoryTree[focused.primary][focused.secondary] = arr;
     if (draft.tertiaries.has(name)) {
       draft.tertiaries.delete(name);
       draft.tertiaries.add(trimmed);
     }
-    await saveCategoryTree();
     renderAll();
   }
   async function deleteTertiary(name) {

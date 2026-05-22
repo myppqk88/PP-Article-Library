@@ -347,9 +347,39 @@ function paperBadges(paper) {
 }
 
 function renderBadges(paper) {
-  const badges = paperBadges(paper);
-  if (!badges.length) return "";
-  return `<div class="badge-row">${badges.map((item) => `<span class="badge">${escapeHtml(item)}</span>`).join("")}</div>`;
+  // 徽章分三类着色：期刊指标 / 星标 / 扫描件 = 中性灰；一级分类 = 暖砂色；
+  // 二级分类 = 雾霾绿灰。用浅色区分分类层级，又不抢眼。
+  const items = [];
+  const seen = new Set();
+  const push = (text, cls) => {
+    const t = String(text || "").trim();
+    if (!t || seen.has(t)) return;
+    seen.add(t);
+    items.push({ text: t, cls });
+  };
+  if (paper["星标"]) push("★追踪", "");
+  for (const key of ["期刊分区", "SSCI", "SCI", "UTD", "FT50", "ABS"]) {
+    const value = paper[key];
+    if (value && value !== "否" && value !== "false" && value !== "0") {
+      push(key === "期刊分区" ? value : key, "");
+    }
+  }
+  if (isScannedPaper(paper)) {
+    push(paper["扫描件"] === "疑似" ? "疑似扫描件" : "扫描件", "");
+  }
+  // 一级分类（AI 建议字段可能是 ；连接的多值，逐个拆开）
+  for (const raw of getDisplayPrimaries(paper)) {
+    for (const name of splitValues(raw)) push(name, "badge-cat1");
+  }
+  // 二级分类（最多 2 个）
+  for (const name of getDisplaySecondaries(paper).slice(0, 2)) {
+    push(name, "badge-cat2");
+  }
+  if (!items.length) return "";
+  const html = items
+    .map((it) => `<span class="badge${it.cls ? " " + it.cls : ""}">${escapeHtml(it.text)}</span>`)
+    .join("");
+  return `<div class="badge-row">${html}</div>`;
 }
 
 async function loadConfig() {
@@ -372,12 +402,9 @@ function showSettingsTab(tab) {
   document.querySelectorAll("#settingsTabs button").forEach((button) => {
     button.classList.toggle("active", button.dataset.settingsTab === tab);
   });
-  for (const name of ["model", "translation", "ocr", "vision", "easyscholar", "citations", "ui", "prompts", "journals"]) {
+  for (const name of ["model", "translation", "ocr", "vision", "easyscholar", "ui", "prompts", "journals"]) {
     const el = $(`${name}SettingsSection`);
     if (el) el.classList.toggle("hidden", name !== tab);
-  }
-  if (tab === "citations") {
-    loadCitationManager().catch((e) => { console.error(e); notify.error("citation 加载失败：" + e.message); });
   }
   if (tab === "easyscholar") {
     loadEasyscholarSettings().catch((e) => { console.error(e); notify.error("EasyScholar 设置加载失败：" + e.message); });
@@ -477,6 +504,17 @@ async function loadCitationManager() {
   }
   // also refresh the topbar dropdown
   loadCitationList().catch(() => {});
+}
+
+async function openCitationManager() {
+  const selectedCitation = $("helpCiteSelect")?.value || "";
+  if (selectedCitation) state.activeCitation = selectedCitation;
+  $("citationManagerModal").classList.remove("hidden");
+  await loadCitationManager();
+}
+
+function closeCitationManager() {
+  $("citationManagerModal").classList.add("hidden");
 }
 
 async function openCitationInEditor(name, opts = {}) {
@@ -1431,6 +1469,7 @@ function renderSelected() {
 
   $("titleEn").value = paper["英文标题"] || paper["标题"] || "";
   $("titleZh").value = paper["中文标题"] || "";
+  if ($("oneSentenceSummary")) $("oneSentenceSummary").value = paper["AI一句话总结"] || "";
   $("venue").value = paper["期刊会议"] || "";
   $("journalQuartile").value = paper["期刊分区"] || "";
   if ($("journalRankManual")) $("journalRankManual").value = paperRankManual(paper);
@@ -1829,6 +1868,7 @@ function metaFields() {
     重要性: $("importance").value,
     阅读状态: $("readStatus").value,
     我的备注: $("myRemark").value,
+    AI一句话总结: $("oneSentenceSummary")?.value || "",
   };
 }
 
@@ -1854,6 +1894,34 @@ const autosaveMeta = debounce(() => {
     $("metaSaveStatus").textContent = error.message;
   });
 }, 900);
+
+// 让 AI 读取当前文献 PDF 全文，生成「一句话总结」并写回总表。
+async function generateSummary() {
+  if (!state.selected) {
+    notify.info("请先在左侧选中一篇文献");
+    return;
+  }
+  const btn = $("genSummaryBtn");
+  const ta = $("oneSentenceSummary");
+  const prevLabel = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "生成中…"; }
+  $("metaSaveStatus").textContent = "AI 正在阅读全文生成总结…";
+  try {
+    const data = await api("/api/paper/gen-summary", {
+      method: "POST",
+      body: JSON.stringify({ paper_id: state.selected.paper_id }),
+    });
+    if (ta) ta.value = data.summary || "";
+    if (data.paper) state.selected = data.paper;
+    $("metaSaveStatus").textContent = "一句话总结已生成并保存";
+    notify.info("一句话总结已生成");
+  } catch (error) {
+    $("metaSaveStatus").textContent = "生成失败：" + error.message;
+    notify.error("生成一句话总结失败：" + error.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prevLabel || "✨ AI 生成"; }
+  }
+}
 
 function openCategoryModal(opts = {}) {
   if (!state.selected) return;
@@ -2751,7 +2819,7 @@ async function helpCiteCurrentPaper() {
     btn.textContent = "已追加 ✓";
     await loadCitationList();
     // Show a preview of the AI-generated entry
-    const previewMsg = `已追加到 ${citationName}.md：\n\n${(data.entry || "").slice(0, 600)}\n\n（完整记录已写入文件，可在设置→引用文件管理中查看）`;
+    const previewMsg = `已追加到 ${citationName}.md：\n\n${(data.entry || "").slice(0, 600)}\n\n（完整记录已写入文件，可点“帮我引用”旁边的 + 查看）`;
     setTimeout(() => alert(previewMsg), 100);
     setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1500);
   } catch (error) {
@@ -2852,9 +2920,11 @@ function bindEvents() {
   $("saveNoteBtn").addEventListener("click", () => saveNote(false));
   $("noteEditor").addEventListener("input", autosaveNote);
   $("saveMetaBtn").addEventListener("click", () => saveMeta(false));
+  $("genSummaryBtn")?.addEventListener("click", generateSummary);
   for (const id of [
     "titleEn",
     "titleZh",
+    "oneSentenceSummary",
     "venue",
     "journalQuartile",
     "journalRankManual",
@@ -2867,8 +2937,10 @@ function bindEvents() {
     "flagFT50",
     "flagABS",
   ]) {
-    $(id).addEventListener("input", autosaveMeta);
-    $(id).addEventListener("change", autosaveMeta);
+    const el = $(id);
+    if (!el) continue;
+    el.addEventListener("input", autosaveMeta);
+    el.addEventListener("change", autosaveMeta);
   }
   $("classificationBox").addEventListener("click", openCategoryModal);
   $("closeCategoryBtn").addEventListener("click", () => $("categoryModal").classList.add("hidden"));
@@ -2950,6 +3022,16 @@ function bindEvents() {
     $("exportCategoryStatus").textContent = e.message;
   }));
   $("helpCiteBtn").addEventListener("click", helpCiteCurrentPaper);
+  $("openCitationManagerBtn")?.addEventListener("click", () => {
+    openCitationManager().catch((e) => {
+      console.error(e);
+      notify.error("citation 管理加载失败：" + e.message);
+    });
+  });
+  $("closeCitationManagerBtn")?.addEventListener("click", closeCitationManager);
+  $("citationManagerModal")?.addEventListener("click", (e) => {
+    if (e.target === $("citationManagerModal")) closeCitationManager();
+  });
   $("scanRefreshBtn").addEventListener("click", refreshScanStatus);
   $("settingsBtn").addEventListener("click", async () => {
     await loadSettings();
@@ -3057,6 +3139,24 @@ document.addEventListener("dc-paper-categorized", async (e) => {
   }
   try { await loadCategories(); } catch (err) { console.error("loadCategories after categorize failed", err); }
   try { await loadPapers(); } catch (err) { console.error("loadPapers after categorize failed", err); }
+});
+
+// 在分类弹窗里重命名了某个分类（一级/二级/三级）。后端已迁移所有文献的
+// 分类字段，这里把前端整体刷新：分类树、侧栏计数、文献列表（徽章），
+// 以及当前选中文献的元信息分类显示。
+document.addEventListener("dc-categories-renamed", async () => {
+  try { await loadCategoryTree(); } catch (err) { console.error("loadCategoryTree after rename failed", err); }
+  try { await loadCategories(); } catch (err) { console.error("loadCategories after rename failed", err); }
+  try { await loadPapers(); } catch (err) { console.error("loadPapers after rename failed", err); }
+  if (state.selected) {
+    try {
+      const data = await api(`/api/paper?paper_id=${encodeURIComponent(state.selected.paper_id)}`);
+      if (data && data.paper) {
+        state.selected = data.paper;
+        renderClassificationBox(state.selected);
+      }
+    } catch (err) { console.error("refresh selected paper after rename failed", err); }
+  }
 });
 
 async function init() {

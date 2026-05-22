@@ -1,0 +1,132 @@
+/* ============================================================
+ * styles-minimal.css — 视觉简化层 (保守版)
+ *
+ * 加载顺序：放在所有现有样式表之后（在 index.html <head> 里最后一个）。
+ * 完全回滚：删除本文件 + index.html 里它的 <link> 即可。
+ *
+ * 设计原则：
+ *   - 只做结构性简化（合并行、隐藏冗余标签、横向 chip 风筛选）
+ *   - 不动按钮自身的"文字背景框框"——保留所有按钮原本的视觉重量
+ *   - 关键覆盖必须用 !important，因为部分 patch 是运行时 JS 注入 <style>
+ * ============================================================ */
+
+
+/* ───────────────────────────────────────────────────────────
+   2 · 侧栏筛选 —— 4 个 select 由竖向变横向 chip 风
+   未激活：浅底色 + 浅边框（保留"框框"感）
+   激活（has-value）：橙色 chip 高亮
+   ─────────────────────────────────────────────────────────── */
+
+.filter-stack {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+}
+
+.filter-stack select {
+  width: auto !important;
+  flex: 0 0 auto !important;
+  padding: 4px 22px 4px 10px !important;
+  background-color: var(--panel-soft) !important;
+  border: 1px solid var(--line-soft) !important;
+  color: var(--muted) !important;
+  font-size: 11.5px !important;
+  border-radius: 999px !important;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.filter-stack select:hover {
+  background-color: var(--panel-strong) !important;
+  border-color: var(--line) !important;
+  color: var(--text-strong) !important;
+}
+.filter-stack select.has-value {
+  background-color: var(--accent-tint) !important;
+  border-color: var(--accent-soft) !important;
+  color: var(--accent-strong) !important;
+  font-weight: 500 !important;
+}
+.filter-stack select#sortSelect {
+  margin-left: auto !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+}
+
+#paperCount.muted {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  margin: 2px 0 8px;
+  letter-spacing: 0.02em;
+}
+
+
+/* ───────────────────────────────────────────────────────────
+   3 · 阅读区头部 —— meta / venue / rank 合并成一行 flow
+   按钮的"框框"保持不动；只动布局
+   ─────────────────────────────────────────────────────────── */
+
+/* 三块元信息打通成一行 flow，自动 wrap */
+#paperMeta,
+#paperVenueLine,
+#paperRankLine {
+  display: inline-flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px 8px !important;
+  align-items: center !important;
+  font-size: 12px !important;
+  color: var(--muted) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.7 !important;
+  vertical-align: baseline !important;
+  font-style: normal !important;
+}
+
+#paperMeta::after,
+#paperVenueLine::after {
+  content: "·";
+  color: var(--muted-soft);
+  margin: 0 2px 0 6px;
+}
+#paperMeta:empty::after,
+#paperVenueLine:empty::after { content: none; }
+
+.reader-head {
+  padding-top: 14px !important;
+  padding-bottom: 10px !important;
+}
+.reader-head > div:first-child {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+/* reader-toolbar —— 隐藏「选中 PDF 文字 → ⌘C 复制」永久提示
+   翻译剪贴板按钮保留原样（保留它自己的"框框"） */
+.reader-toolbar > span:first-child {
+  display: none !important;
+}
+
+
+/* ───────────────────────────────────────────────────────────
+   4 · 分类 / 元数据面板 —— 只隐藏 section 小标题
+   保存按钮 / chip / 输入框的"框框"完全不动
+   ─────────────────────────────────────────────────────────── */
+
+/* 隐藏 5 个 section 小标题（标题与作者 / 分类路径 / 状态 / 期刊与等级 / 我的备注）
+   字段标签本身已经够分组，不需要再扣一层小标题 */
+#metaPanel .meta-section-head {
+  display: none !important;
+}
+
+/* section 之间用空白和淡虚线分组（替代原来的小标题分组感） */
+#metaPanel .meta-section {
+  padding-bottom: 12px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px dashed var(--line-soft) !important;
+}
+#metaPanel .meta-section:last-of-type {
+  border-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}

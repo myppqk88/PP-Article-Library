@@ -54,6 +54,29 @@
       --dc-line: #3a352c;
       --dc-border: #3a352c;
       --dc-shadow-pop: 0 18px 50px -12px rgba(0,0,0,0.6);
+      /* 核心 token —— styles.css / 阅读区 / 元信息面板 用的是这一套（不是
+         --dc-*）。之前夜间模式只改了 --dc-*，漏了这些，于是阅读区、元信息
+         面板半黑半白、很丑。补齐后整个 app 一起进入深色。 */
+      --bg: #1a1815;
+      --bg-deep: #141210;
+      --panel: #232019;
+      --panel-soft: #2a2620;
+      --panel-strong: #2e2a22;
+      --line: #3a352c;
+      --line-soft: #322e26;
+      --text: #e8e4dc;
+      --text-strong: #f6f2e9;
+      --muted: #9a9388;
+      --muted-soft: #6c665c;
+      --accent: #d98863;
+      --accent-strong: #e8a585;
+      --accent-soft: #4a3326;
+      --accent-tint: #322620;
+      --warn: #d2a456;
+      --danger: #d98a8a;
+      --shadow-1: 0 1px 2px rgba(0,0,0,0.4);
+      --shadow-2: 0 6px 18px rgba(0,0,0,0.5);
+      --shadow-3: 0 18px 48px rgba(0,0,0,0.65);
       color-scheme: dark;
     }
     [data-theme="dark"] body { background: var(--dc-bg); color: var(--dc-text); }
@@ -417,7 +440,7 @@
     const authors = (paper["作者"] || "").split(/[;；]/)[0].trim();
     const year = paper["年份"] || "";
     const venue = paper["期刊会议"] || "";
-    const summary = paper["一句话总结"] || paper.one_sentence_summary || "(AI 未生成总结)";
+    const summary = paper["AI一句话总结"] || paper["一句话总结"] || paper.one_sentence_summary || "未生成";
     const tags = [];
     if (paper["一级分类"]) tags.push(...paper["一级分类"].split(/[;；]/).map((s) => s.trim()).filter(Boolean));
     if (paper["二级分类"]) tags.push(...paper["二级分类"].split(/[;；]/).map((s) => s.trim()).filter(Boolean).slice(0, 3));

@@ -1,285 +1,223 @@
-# PP Article Library
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="PP Article Library logo" width="118" />
+</p>
 
-一个**源码公开、非商用、本地优先**的文献整理 + PDF 阅读 + AI 笔记 + 学术写作助手。
+<h1 align="center">PP Article Library</h1>
 
-- Python 3 + 原生浏览器 JS，零云依赖（除非你自己接 AI provider）
-- 所有数据存在本地文件夹，可以放云盘里跨设备同步
-- 支持 macOS / Windows / Linux（任何能跑 Python 3 + Chrome 系浏览器的系统都行）
-- 当前 `v0.2.2` 提供 macOS / Windows 分开的下载包；源码启动器仍保留给高级用户
+<p align="center">
+  本地优先的文献阅读工作台：找文献、读 PDF、AI 速记、分类整理、引用沉淀，都在同一页完成。<br />
+  A local-first research workbench for PDFs, AI notes, categories, and citation-ready writing context.
+</p>
 
-> **macOS 用户请先看这里**
->
-> `v0.2.2` 的 Mac 包做了本机 ad-hoc 签名，但没有 Apple Developer 付费公证。从 GitHub 下载后，macOS 仍可能提示：
->
-> `Apple 无法验证“PP Article Library.app”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。`
->
-> 这是 macOS 对未公证网络下载 App 的安全提醒，不代表本项目会上传你的 PDF、笔记或 API key。完全免提示需要 Apple Developer 付费签名和公证，本项目暂不承担该成本。免费版如果被拦，请按下面「macOS 第一次打开」处理。
+<p align="center">
+  <a href="https://github.com/myppqk88/PP-Article-Library/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.2.3-4f8f82"></a>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-28343d">
+  <img alt="License" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-d96f51">
+  <img alt="Local first" src="https://img.shields.io/badge/data-local--first-d6a24d">
+</p>
 
-## 适合你吗？
+<p align="center">
+  <img src="docs/assets/readme/main-overview.png" alt="PP Article Library main interface overview" width="900" />
+</p>
 
-适合：
-- 写论文 / 写综述 / 写文献综述章节
-- 需要按主题 + 按论文章节双重组织几百到几千篇 PDF
-- 想让 AI 帮你做"读一篇 → 决定要不要引 → 引到哪一节 → 写出引用句"全链路
-- 不想把 PDF 和笔记交给云厂商
+## 中文
 
-不适合：
-- 想要团队协作（这是单人工具）
-- 主要看小说 / 网页 / EPub（PDF 优先）
+### 它是做什么的
 
-## 快速开始
+PP Article Library 是一个给个人研究使用的本地文献系统。你把 PDF 放进自己的文件夹，它会帮你整理文献、读取全文、生成 AI 笔记、维护分类、保存便签和摘抄，并把某篇文献为什么能被你的论文引用记录到 citation 文件里。
 
-### 普通用户下载
+它不是云盘，也不是在线数据库。你的 PDF、笔记、API key、写作上下文和索引表默认都只在你的电脑上。
 
-1. 打开 [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases)
-2. 下载对应系统：
-   - macOS：`PP-Article-Library-v0.2.2-macOS.zip`
-   - Windows：`PP-Article-Library-v0.2.2-Windows.zip`
-3. 解压到一个新文件夹
-4. 进文件夹，双击：
-   - macOS：`PP Article Library.app`
-   - Windows：`Start PP Article Library.bat`
-5. 首次启动会自动：
-   - 探测系统 Python（PATH / Anaconda / 官方安装路径）
-   - 安装必需 Python 包：PyYAML、requests、openpyxl、PyMuPDF、pypdf
-   - 从 settings.example.yaml 复制出 settings.yaml
-   - 从 .env.example 复制出 .env
-   - 建好所有数据目录（library/、citations/、inbox/ 等）
-6. 浏览器自动打开 → 进 设置 → 主模型，填一个 API key 就能用
+### 功能一览
 
-macOS 会弹出一个“终端 / Terminal”进度窗口，能看到 pip 下载和安装过程。看到浏览器打开后，不要关闭这个终端窗口；关闭窗口会停止本地服务。
+| 阅读与 AI 笔记 | Citation 写作上下文 |
+| --- | --- |
+| <img src="docs/assets/readme/ai-notes-citations.png" alt="AI notes and citation context" width="430"> | <img src="docs/assets/readme/ai-ask-entry.png" alt="Ask AI about the current paper" width="430"> |
+| 阅读 PDF 时生成速记、研究问题、方法数据和核心结论。 | 针对当前文献追问，或把它沉淀到某个写作项目的 citation 文件。 |
 
-`v0.2.2` 暂不内置 Python。多数研究者电脑里已经有 Python / Anaconda；如果没有，先安装 Python 3.10+，Windows 安装时勾选 `Add Python to PATH`。
+| 划词翻译 | 三层分类 |
+| --- | --- |
+| <img src="docs/assets/readme/selection-translation.png" alt="Selection translation" width="430"> | <img src="docs/assets/readme/category-management.png" alt="Three-level category management" width="430"> |
+| 复制 PDF 里的文字后，在工作台内直接翻译。 | 支持一级多选、二级/三级分类、分类重命名和文献同步迁移。 |
 
-路径说明：工作台内部统一把 PDF / 笔记路径保存成 `library/pdfs/xxx.pdf` 这种 `/` 写法。Windows 和 macOS 都能读取；旧数据里如果混有 Windows 的 `\` 路径，启动后也会自动兼容，所以跨系统迁移时不会因为路径分隔符不同而找不到 PDF。
+| 作者图谱 | 模型配置 |
+| --- | --- |
+| <img src="docs/assets/readme/author-map.png" alt="Author map" width="430"> | <img src="docs/assets/readme/model-settings.png" alt="Model settings" width="430"> |
+| 从文献列表里看作者关联，适合梳理主题网络。 | 在网页里配置 DeepSeek、Qwen、OpenAI-compatible、Codex CLI、Claude Code CLI 等。 |
+
+<details>
+<summary>展开完整图文导览</summary>
+
+| 01 主界面 | 02 文献列表 |
+| --- | --- |
+| <img src="docs/assets/readme/main-overview.png" alt="Main overview" width="430"> | <img src="docs/assets/readme/paper-list-detail.png" alt="Paper list details" width="430"> |
+
+| 03 AI 追问 | 04 AI 笔记与引用 |
+| --- | --- |
+| <img src="docs/assets/readme/ai-ask-entry.png" alt="AI ask entry" width="430"> | <img src="docs/assets/readme/ai-notes-citations.png" alt="AI notes and citations" width="430"> |
+
+| 05 划词翻译 | 06 文献便签 |
+| --- | --- |
+| <img src="docs/assets/readme/selection-translation.png" alt="Selection translation" width="430"> | <img src="docs/assets/readme/sticky-notes.png" alt="Sticky notes" width="430"> |
+
+| 07 好句摘抄 | 08 三层分类 |
+| --- | --- |
+| <img src="docs/assets/readme/excerpt-bank.png" alt="Excerpt bank" width="430"> | <img src="docs/assets/readme/category-management.png" alt="Category management" width="430"> |
+
+| 09 期刊分区 | 10 追踪期刊 |
+| --- | --- |
+| <img src="docs/assets/readme/journal-rank-status.png" alt="Journal rank status" width="430"> | <img src="docs/assets/readme/tracking-journals.png" alt="Tracking journals" width="430"> |
+
+| 11 作者图谱 | 12 批量处理 |
+| --- | --- |
+| <img src="docs/assets/readme/author-map.png" alt="Author map" width="430"> | <img src="docs/assets/readme/bulk-actions.png" alt="Bulk actions" width="430"> |
+
+| 13 主模型配置 | 14 界面面板配置 |
+| --- | --- |
+| <img src="docs/assets/readme/model-settings.png" alt="Model settings" width="430"> | <img src="docs/assets/readme/panel-settings.png" alt="Panel settings" width="430"> |
+
+</details>
+
+### 下载与打开
+
+打开 [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases)，下载对应系统：
+
+- macOS: `PP-Article-Library-v0.2.3-macOS.zip`
+- Windows: `PP-Article-Library-v0.2.3-Windows.zip`
+
+当前版本仍需要你电脑上已有 Python 3.10+。Windows 安装 Python 时请勾选 `Add Python to PATH`。
 
 ### macOS 第一次打开
 
-如果直接双击出现黄色警告，先试这个：
+这个项目不做商业化，也没有购买 Apple Developer 签名和公证。macOS 可能会提示“Apple 无法验证 PP Article Library 是否包含恶意软件”。第一次打开时，推荐直接按下面操作，少走弯路：
 
-1. 点「完成」，不要点「移到废纸篓」。
-2. 回到 Finder，对 `PP Article Library.app` 右键 / 双指点按。
-3. 选择「打开」。
-4. 如果系统设置里出现「仍要打开 / Open Anyway」，也可以在那里允许一次。
+如果你把文件解压在“下载”目录，复制这一整句到“终端 / Terminal”回车：
 
-如果仍然不行，说明 macOS 对这个浏览器下载包加了 quarantine 隔离标记。免费未公证 App 无法在运行前自己解除这个标记，需要你在本机确认一次。最短操作如下，不用 `cd`：
+```bash
+xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.3-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.3-macOS/PP Article Library.app"
+```
+
+如果你放在别的位置：
+
+1. 打开“终端 / Terminal”。
+2. 输入下面这句，然后按一下空格键：
+
+```bash
+xattr -dr com.apple.quarantine
+```
+
+3. 把整个 `PP-Article-Library-v0.2.3-macOS` 文件夹拖进终端窗口。
+4. 按回车。
+5. 再双击 `PP Article Library.app`。
+
+启动后会打开一个 Terminal 进度窗口。第一次运行会显示 Python 检测、依赖安装和服务启动日志。看到浏览器打开后，不要关闭这个 Terminal 窗口；关闭窗口会停止本地工作台。
+
+### Windows 第一次打开
+
+1. 解压 `PP-Article-Library-v0.2.3-Windows.zip`。
+2. 双击 `Start PP Article Library.bat`。
+3. 首次运行会检测 Python 并安装必需依赖。
+4. 浏览器会自动打开本地工作台。
+
+如果提示找不到 Python，请安装 Python 3.10+，并勾选 `Add Python to PATH`。
+
+### 首次运行会安装什么
+
+首次运行只自动安装必需 Python 包：
+
+- `PyYAML`
+- `requests`
+- `openpyxl`
+- `PyMuPDF`
+- `pypdf`
+
+这些依赖会安装到项目文件夹里的 `.deps_macos` 或 `.deps_windows`，不会修改你的系统 Python。扫描件 OCR 的 `rapidocr` / `Pillow` 不会默认安装，需要 OCR 时可以再手动安装或配置云 OCR。
+
+### API key 保存在哪里
+
+你在网页「设置」里填写的 key 会写入项目根目录的 `.env` 文件。这个文件已被 `.gitignore` 排除，不会上传到 GitHub。
+
+### 数据在哪里
 
 ```text
-1. 打开“终端 / Terminal”
-2. 输入下面这句，末尾留一个空格：
-
-   xattr -dr com.apple.quarantine
-
-3. 把整个解压后的 PP-Article-Library-v0.2.2-macOS 文件夹拖进终端窗口
-4. 按回车
-5. 再双击 PP Article Library.app
+.
+├── inbox/             待整理 PDF
+├── library/
+│   ├── pdfs/          整理后的 PDF
+│   ├── notes/         Markdown 笔记
+│   ├── text/          PDF 文本缓存
+│   ├── cache/         AI / EasyScholar 缓存
+│   ├── stickies/      便签 JSON
+│   └── index/         papers.csv / papers.xlsx
+├── citations/         写作 citation 文件
+├── config/            本地设置
+├── prompts/           AI 提示词和笔记模板
+├── scripts/           Python 后端
+├── web/               浏览器前端
+├── exports/           分类导出包
+└── .env               API keys
 ```
 
-如果你就是解压在“下载”目录，也可以直接复制这一整句：
+`library/`、`inbox/`、`citations/`、`exports/`、`.env`、`config/settings.yaml` 都不会上传到公开仓库。
+
+### 从源码启动
 
 ```bash
-xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.2-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.2-macOS/PP Article Library.app"
-```
-
-`v0.2.2` 的 Mac 包里也有一份 `MAC_FIRST_RUN.txt`，写的就是这几步。由于没有 Apple Developer 付费公证，第一次安全提示无法完全消除；这不是代码能在免费未公证状态下绕过的东西。
-
-### Git 用户
-
-```bash
-git clone https://github.com/myppqk88/PP-Article-Library.git literature-hub
-cd literature-hub
-./打开文献工作台.command  # macOS
-```
-
-### 手动启动（如果脚本启动器跑不了）
-
-```bash
-cd literature-hub
-pip install -r requirements.txt
+git clone https://github.com/myppqk88/PP-Article-Library.git
+cd PP-Article-Library
 python3 scripts/server.py
 ```
 
-server.py 会自动做上面 1-3 步的所有初始化工作。**唯一需要你手填的就是 API key**——可以在网页 设置 → 主模型 里直接填（会写入 `.env`），也可以提前编辑 `.env` 文件。
+浏览器会打开 `http://127.0.0.1:8765`。
 
-浏览器会自动打开 `http://127.0.0.1:8765`。
+## English
 
-**关闭方式**：直接关浏览器窗口。约 60 秒后工作台会自动退出（基于心跳检测）。如果想保持运行不退出，加 `--keep-alive`：
+PP Article Library is a local-first research workbench for personal literature management. It helps you organize PDFs, read papers, generate AI notes, classify papers, keep sticky notes and excerpts, and maintain citation context for writing projects.
 
-```bash
-python3 scripts/server.py --keep-alive   # Ctrl+C 才退
-```
+### Download
 
-## 日常工作流
+Download the latest package from [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases):
 
-1. **导入 PDF**：把新 PDF 拖进 `inbox/` → 网页右上点「整理新文献」→ AI 抽元数据、建初始笔记和 AI 分类建议、移入 `library/pdfs/`
-2. **打开一篇**：左栏列表点一篇 → 中间 PDF 阅读器加载，右栏笔记 / AI / 分类 / 便签 4 个 tab
-3. **阅读 + 翻译**：在 PDF 里选中英文 → ⌘C → 点页面右上「翻译剪贴板」（走本地 Ollama 或 OpenAI 兼容 API）
-4. **写笔记**：右栏「笔记」tab 默认预览，点「编辑」切到 Markdown 编辑器。"我的人工笔记"段在 AI 重读时被保护
-5. **分类**：右栏「分类」tab → 点分类框 → 弹分类管理窗
-   - 一级 / 二级 / 三级三层结构，每层都能多选
-   - 一篇文献可以同时挂多个一级（比如学科分类 + "M1 我的论文一引用集"）
-   - 「编辑分类体系」嵌套窗里能新增 / 重命名 / 删除任一级，**重命名会自动同步所有已分类文献**
-6. **便签**：右栏「便签」tab。每篇文献独立的 JSON 便签集，跟 PDF 解耦（删除文献时自动清理）
-7. **追问 AI**：右栏「AI」tab，对当前文献提问。可选「按页读图」喂图片给 vision 模型（扫描件用）
+- macOS: `PP-Article-Library-v0.2.3-macOS.zip`
+- Windows: `PP-Article-Library-v0.2.3-Windows.zip`
 
-## 写作助手（核心）
+Python 3.10+ is still required. On Windows, install Python with `Add Python to PATH` enabled.
 
-为每篇正在写的论文建一份 **citation 文件**（在 `citations/` 目录）：
-- 顶部「写作上下文」区（手写）：中心主题、范围边界、预期章节、关键论点、理论框架、目标期刊
-- 「引用记录」区（手写 + AI 追加）：每条对应一篇文献的具体引用建议
+### First Launch On macOS
 
-工作流：
-- 顶栏「**帮我阅读**」：AI 重读当前 PDF → 刷新元数据 + 笔记。不动分类和人工字段。
-- 顶栏「**帮我引用**」：旁边下拉选 citation 文件 → AI 读「这篇文献 + 该 citation 的写作上下文」→ 生成一条引用记录追加到该 citation 末尾
-
-进设置 → 引用文件管理 编辑 `<!-- WRITING_CONTEXT_START/END -->` 之间的内容，让 AI 知道这篇论文要写什么。
-
-## 期刊等级自动匹配（可选）
-
-接入 [EasyScholar API](https://www.easyscholar.cc/)：
-
-1. 注册账号，到「开放接口」拿到 secretKey
-2. 启动工作台 → 设置 → 期刊等级源 → 粘贴 secretKey → 保存
-3. 勾选要查的字段（中科院升级 / SCI / SSCI / FMS / UTD24 / AJG / CSSCI / ...）
-4. 顶栏「刷新等级」（单篇）或「批量刷新等级」（全库）
-
-查到的结果写入 `期刊等级_自动` 字段；你手填的 `期刊等级_人工` 字段独立存储，**永远不会被自动刷新覆盖**。显示时优先用人工值。
-
-## 批量按分类导出
-
-顶栏「按分类导出」→ 选任一分类（一/二/三级都行）→ 一键导出到：
-
-```
-exports/<分类名>_<时间戳>/
-├── pdfs/<paper_id>.pdf
-├── notes/<paper_id>.md
-├── 文献清单.csv
-├── 文献清单.xlsx
-└── README.md
-```
-
-PDF 和笔记文件名一致，方便配对。
-
-## 目录结构
-
-```
-.
-├── inbox/             ← 待整理 PDF 放这里
-├── library/
-│   ├── pdfs/          ← 整理后 PDF 主库
-│   ├── notes/         ← 每篇一份 .md 笔记
-│   ├── text/          ← PDF 文本缓存（喂给 AI 用）
-│   ├── cache/         ← AI / EasyScholar 回包缓存
-│   ├── stickies/      ← 便签 JSON
-│   └── index/         ← papers.csv / papers.xlsx 总表
-├── citations/         ← 每篇在写论文一份 .md
-├── config/
-│   ├── settings.yaml          ← 你的本地配置
-│   └── settings.example.yaml  ← 配置模板
-├── prompts/           ← AI 提示词 + 笔记模板
-├── scripts/           ← Python 后端（server.py / organize.py / 等）
-├── web/               ← 浏览器前端（原生 ES module）
-├── exports/           ← 批量导出的临时材料包
-├── list.xlsx          ← 可选本地文件：你追踪的期刊（默认不上传）
-└── .env               ← API keys（已 gitignore）
-```
-
-数据目录（`library/`、`inbox/`、`citations/`、`exports/`）都在 `.gitignore` 里，clone 这个仓库不会拿到任何人的私人 PDF / 笔记 / 写作上下文。
-
-## 配置 AI Provider
-
-`.env` 至少需要一个 AI provider 的 key：
-
-| Provider | env 变量 | 备注 |
-|---|---|---|
-| DeepSeek | `DEEPSEEK_API_KEY` | 性价比高，推荐 |
-| 阿里 Qwen | `QWEN_API_KEY` | 经 `dashscope.aliyuncs.com/compatible-mode/v1` |
-| 任意 OpenAI 兼容 | `OPENAI_API_KEY` | 自填 base_url，能接 OpenAI / Moonshot / Together / 任何兼容接口 |
-| Codex CLI | （走 `codex login` 的本地缓存） | 把你的 ChatGPT/Codex 订阅当 API 用，无需单独 API key |
-| Claude Code CLI | （走 `claude login` 的本地缓存，或 `ANTHROPIC_API_KEY`） | 把 Claude Code Pro/Max 订阅当 API 用 |
-| EasyScholar | `EASYSCHOLAR_SECRET_KEY` | 期刊等级查询（可选） |
-
-在工作台「设置 → 模型设置」里切换 provider 和填具体的 base_url / model / API key（key 会写回 `.env`）。
-
-### Codex CLI 配置（用 ChatGPT/Codex 订阅当 API）
-
-1. **安装**：从 [openai.com/codex](https://openai.com/codex/) 下载（macOS 是 `Codex.app`），或 `brew install codex`。
-2. **登录**：终端跑一次 `codex login`，浏览器走 OAuth，凭据缓存到 `~/.codex/`。
-3. **工作台**：「设置 → 模型 → Codex CLI」标签
-   - **Codex CLI 路径**：
-     - macOS：`/Applications/Codex.app/Contents/Resources/codex`
-     - Windows：`codex.cmd`（在 PATH 中就行；否则填绝对路径，比如 `C:\Users\<you>\AppData\Roaming\npm\codex.cmd`）
-     - 不填留空，会用平台默认
-   - **Codex 模型**：默认 `gpt-5.4`；可填 `gpt-5.4-codex`、`gpt-4o` 等你订阅支持的
-   - **沙盒**：`read-only` 就够了
-4. **切到 Codex 后**：「设置 → 主模型」下拉里选 `codex_cli`，保存。整理新文献、帮我阅读、AI 问答都会走 Codex。
-
-### Claude Code CLI 配置（用 Claude Pro/Max 订阅当 API）
-
-1. **安装**：`npm install -g @anthropic-ai/claude-code`（需要 Node.js 18+）。
-2. **登录**：终端跑一次 `claude login`，浏览器走 OAuth，凭据缓存到 `~/.config/claude/`（macOS/Linux）或 `%APPDATA%\Claude\`（Windows）。
-   - 或者直接在工作台「Claude CLI」标签的 **ANTHROPIC_API_KEY** 字段填你的 Anthropic key，会写入 `.env`。两种方式 CLI 都能识别。
-3. **工作台**：「设置 → 模型 → Claude CLI」标签
-   - **Claude CLI 路径**：
-     - macOS/Linux：`claude`（在 PATH 中即可，留空也行）
-     - Windows：`claude.cmd`（npm 全局装包后会在 `%APPDATA%\npm\claude.cmd`；如果没在 PATH 里就填绝对路径）
-   - **Claude 模型**：默认 `claude-sonnet-4-5`；可填 `claude-opus-4-1`、`claude-haiku-4-5`
-   - **超时秒数**：默认 240（Claude 在长文上比较稳但慢）
-4. **切到 Claude 后**：「设置 → 主模型」下拉里选 `claude_cli`，保存。整理新文献 / 帮我阅读 / AI 问答都会走 Claude Code CLI。
-
-> 两个 CLI provider 的好处：**你已经在 ChatGPT Plus / Codex / Claude Pro 上付了月费，调用次数走订阅额度不走 API 计费**。缺点：单次调用的延迟比 API 高一些（30–90s），不支持视觉模型。
-
-**翻译**默认走本地 [Ollama](https://ollama.com/)，零成本：`brew install ollama && ollama pull qwen2.5:14b`。也可改成 OpenAI 兼容 API。
-
-### 扫描件 OCR fallback
-
-PDF 文本抽取不到内容时（扫描件），工作台会自动调本地 OCR 引擎识别文字再喂给 AI。**默认引擎 `rapidocr-onnxruntime`**：
-
-- 走 `pip install -r requirements.txt` 自动装好（~50MB，模型已打包，无需联网下载）
-- 跨平台（macOS / Windows / Linux），不依赖 Tesseract 等系统级二进制
-- 中文识别率约 92%，对印刷体扫描件够用
-- 结果缓存到 `library/text/{hash}.ocr.txt`，重复打开同一篇不重复 OCR
-
-**触发条件**（在 设置 → OCR 里可改）：PDF 抽出的文本 < 500 字符 或 启发式标记为扫描件 → 自动跑 OCR。
-
-**切其他引擎**：
-- `easyocr` — 准但重（需 PyTorch ~350MB），`pip install easyocr`
-- `cloud` — 调任意 OpenAI 兼容的视觉接口做 OCR（阿里通义 VL / 火山豆包 / GPT-4o）。在 设置→OCR→云 OCR 配置 里填 base_url + model + key
-
-## 命令行用法
+This app is not Apple Developer notarized. On first launch, macOS may block the downloaded app. If the folder is in Downloads, paste this into Terminal:
 
 ```bash
-python3 scripts/server.py                     # 启动网页
-python3 scripts/server.py --no-browser        # 不自动开浏览器
-python3 scripts/server.py --keep-alive        # 关浏览器后不自动退出
-python3 scripts/server.py --idle-timeout 300  # 自定义心跳超时(秒)
-
-python3 scripts/organize.py                   # 手动整理 inbox（也可在网页点按钮）
-python3 scripts/organize.py --limit 3         # 只测前 3 篇
-python3 scripts/organize.py --no-ai           # 不调 AI，只建占位
-python3 scripts/organize.py --force-ai        # 强制重跑 AI
-
-python3 scripts/export_by_category.py 开放科学          # 按关键词宽松匹配
-python3 scripts/export_by_category.py 开放科学 --exact  # 按分类 token 精确匹配
+xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.3-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.3-macOS/PP Article Library.app"
 ```
 
-## 跨设备同步
+If the folder is elsewhere, type `xattr -dr com.apple.quarantine ` in Terminal, drag the extracted `PP-Article-Library-v0.2.3-macOS` folder into Terminal, press Enter, then open `PP Article Library.app`.
 
-项目放在云盘里（坚果云 / iCloud / Dropbox）即可在多台电脑间共享。
-- `library/` 数据是单一来源
-- `config/settings.yaml` 你的偏好
-- 不同平台的二进制依赖（`.deps_macos/` / `.deps_windows/`）可选；不存在时用系统 site-packages
+The app opens a Terminal progress window. Keep it open while using the workbench; closing it stops the local server.
 
-## 进一步阅读
+### First Launch On Windows
 
-- [DEVELOPER.md](DEVELOPER.md) — 架构、数据 schema、API 路由、修改时的同步清单。
-  贡献代码 / 让 AI 助手帮你改系统时**强烈建议先读这份**。
-- [CHANGELOG.md](CHANGELOG.md) — 版本更新记录。
+1. Extract `PP-Article-Library-v0.2.3-Windows.zip`.
+2. Double-click `Start PP Article Library.bat`.
+3. The launcher checks Python and installs required dependencies.
+4. Your browser opens the local workbench.
 
-## 许可
+### Run From Source
 
-本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE.md)。
+```bash
+git clone https://github.com/myppqk88/PP-Article-Library.git
+cd PP-Article-Library
+python3 scripts/server.py
+```
 
-你可以为了个人研究、学习、教育、公益、公共研究等非商业目的使用、修改和分发本项目。商业使用需要先获得作者单独许可。
+Then open `http://127.0.0.1:8765`.
 
-这是一份“源码公开、非商用”的软件许可；它不是 OSI 定义下的开放源代码许可。
+### Privacy And Local Data
+
+PDFs, notes, citation files, API keys, local settings, generated indexes, exports, and caches stay in your local folder by default. They are ignored by Git and are not included in the public repository.
+
+### License
+
+This project uses the [PolyForm Noncommercial License 1.0.0](LICENSE.md).
+
+You may use, modify, and share it for noncommercial research, learning, teaching, public-interest, and educational purposes. Commercial use requires separate permission from the author.

@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/web/styles.css" />
     <link rel="stylesheet" href="/web/styles-features.css" />
     <link rel="stylesheet" href="/web/styles-design.css" />
+    <link rel="stylesheet" href="/web/styles-minimal.css" />
+    <link rel="stylesheet" href="/web/styles-design-polish.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -34,6 +36,7 @@
             <select id="helpCiteSelect" disabled title="选择引用要追加到的 citation 文件">
               <option value="">加载中…</option>
             </select>
+            <button id="openCitationManagerBtn" class="citation-manage-btn" type="button" title="管理 citation 文件">+</button>
           </span>
 
           <span class="overflow-wrap">
@@ -62,7 +65,7 @@
           </span>
 
           <button id="settingsBtn" class="btn-icon" title="设置">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </header>
@@ -185,6 +188,15 @@
                 已自动保存
               </span>
               <button id="saveNoteBtn" type="button" style="display:none">保存笔记</button>
+            </div>
+            <div id="noteSummaryBox" class="note-summary-box">
+              <div class="note-summary-head">
+                <span class="note-summary-label">一句话总结</span>
+                <button id="genSummaryBtn" type="button" class="ai-gen-btn"
+                        title="让 AI 读取这篇 PDF 全文，生成一句话总结">✨ AI 生成</button>
+              </div>
+              <textarea id="oneSentenceSummary" rows="2"
+                        placeholder="未生成 —— 整理新文献时自动填入，也可手动编辑"></textarea>
             </div>
             <textarea id="noteEditor" class="hidden" spellcheck="false"></textarea>
             <div id="notePreview" class="note-preview"></div>
@@ -422,7 +434,6 @@
           <button data-settings-tab="ocr" type="button">OCR</button>
           <button data-settings-tab="vision" type="button">视觉模型</button>
           <button data-settings-tab="easyscholar" type="button">期刊等级源</button>
-          <button data-settings-tab="citations" type="button">Citation</button>
           <button data-settings-tab="ui" type="button">界面</button>
           <button data-settings-tab="prompts" type="button">提示词</button>
           <button data-settings-tab="journals" type="button">期刊库</button>
@@ -649,34 +660,6 @@
           </div>
         </section>
 
-        <section id="citationsSettingsSection" class="settings-section hidden">
-          <div class="citation-layout">
-            <aside class="citation-side">
-              <div class="citation-side-head">
-                <strong>citation 文件列表</strong>
-                <span class="muted" id="citationCount"></span>
-              </div>
-              <div id="citationList" class="citation-list"></div>
-              <div class="citation-new-row">
-                <input id="newCitationName" placeholder="新文件名（英文/拼音/数字，例如 M4_my_review）" />
-                <input id="newCitationDisplay" placeholder="显示名称（可中文）" />
-                <button id="createCitationBtn" type="button">新建 citation</button>
-              </div>
-            </aside>
-            <section class="citation-editor">
-              <div class="citation-editor-head">
-                <strong id="citationEditorTitle">选择左侧文件开始编辑</strong>
-                <div class="panel-actions">
-                  <button id="saveCitationBtn" type="button" disabled>保存到文件</button>
-                  <button id="deleteCitationBtn" class="secondary danger" type="button" disabled>删除</button>
-                  <span id="citationEditorStatus" class="muted"></span>
-                </div>
-              </div>
-              <textarea id="citationEditor" spellcheck="false" placeholder="点击左侧任一 citation 文件查看 / 编辑。顶部「写作上下文」区块（两条 HTML 注释之间）是「帮我引用」的 AI 语境来源。"></textarea>
-            </section>
-          </div>
-        </section>
-
         <section id="uiSettingsSection" class="settings-section hidden">
           <div class="ui-settings-body">
             <h3 class="settings-section-title">主题色</h3>
@@ -741,6 +724,45 @@
               <span></span>
             </div>
             <div id="journalRows"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="citationManagerModal" class="modal hidden">
+      <div class="modal-card citation-manager-card">
+        <div class="modal-head">
+          <div>
+            <h2>Citation 管理</h2>
+            <p class="muted">新建或编辑「帮我引用」使用的写作上下文文件。</p>
+          </div>
+          <button id="closeCitationManagerBtn" class="secondary" type="button">关闭</button>
+        </div>
+        <section id="citationsSettingsSection" class="citation-manager-section">
+          <div class="citation-layout">
+            <aside class="citation-side">
+              <div class="citation-side-head">
+                <strong>citation 文件列表</strong>
+                <span class="muted" id="citationCount"></span>
+              </div>
+              <div id="citationList" class="citation-list"></div>
+              <div class="citation-new-row">
+                <input id="newCitationName" placeholder="新文件名（英文/拼音/数字，例如 M4_my_review）" />
+                <input id="newCitationDisplay" placeholder="显示名称（可中文）" />
+                <button id="createCitationBtn" type="button">新建 citation</button>
+              </div>
+            </aside>
+            <section class="citation-editor">
+              <div class="citation-editor-head">
+                <strong id="citationEditorTitle">选择左侧文件开始编辑</strong>
+                <div class="panel-actions">
+                  <button id="saveCitationBtn" type="button" disabled>保存到文件</button>
+                  <button id="deleteCitationBtn" class="secondary danger" type="button" disabled>删除</button>
+                  <span id="citationEditorStatus" class="muted"></span>
+                </div>
+              </div>
+              <textarea id="citationEditor" spellcheck="false" placeholder="点击左侧任一 citation 文件查看 / 编辑。顶部「写作上下文」区块（两条 HTML 注释之间）是「帮我引用」的 AI 语境来源。"></textarea>
+            </section>
           </div>
         </section>
       </div>
@@ -1027,5 +1049,8 @@
     <script type="module" src="/web/app-design-coauth.js"></script>
     <script type="module" src="/web/app-design-models.js"></script>
     <script type="module" src="/web/app-design-multiask.js"></script>
+    <script type="module" src="/web/app-design-reader.js"></script>
+    <script type="module" src="/web/app-design-metaform.js"></script>
+    <script type="module" src="/web/app-design-notebg.js"></script>
   </body>
 </html>

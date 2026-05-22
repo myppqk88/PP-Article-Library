@@ -427,7 +427,7 @@ def build(version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build PP Article Library release ZIPs.")
-    parser.add_argument("--version", default="v0.2.2")
+    parser.add_argument("--version", default="v0.2.3")
     args = parser.parse_args()
     build(args.version)
 

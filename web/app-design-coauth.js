@@ -637,8 +637,12 @@
   // Auto-inject an entry-point button into the categorization panel + side
   // category picker. The button asks for category context and opens modal.
   function injectEntryButton() {
-    // Add a global button in the top-right tools area
-    const tools = document.querySelector(".topbar-right") ||
+    // Add a global button in the top-right tools area.
+    // IMPORTANT: prefer .top-actions over .topbar — appending to .topbar
+    // causes its `justify-content: space-between` to spread brand/actions/this-button
+    // into 3 columns, pushing the main action group to the center.
+    const tools = document.querySelector(".top-actions") ||
+                  document.querySelector(".topbar-right") ||
                   document.querySelector(".topbar") ||
                   document.querySelector("header");
     if (tools && !document.getElementById("dcCoauthBtn")) {

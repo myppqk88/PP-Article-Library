@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import easyscholar
 from common import (
     INDEX_FIELDS,
     ROOT,
@@ -873,6 +874,34 @@ def source_action(source_path: Path, settings: dict[str, Any], forced: str | Non
         return "copy"
 
 
+def refresh_journal_rank(
+    row: dict[str, str],
+    secret_key: str,
+    enabled_fields: list[str],
+) -> str:
+    """整理流程里每篇文献的最后一步：用 EasyScholar 刷新「期刊等级_自动」。
+
+    只写 `期刊等级_自动`，绝不碰用户手填的 `期刊等级_人工`。
+    无 key / 无期刊名 / 查询失败时安静跳过，绝不让整理任务中断。
+    返回一句状态文本，供整理日志打印。EasyScholar 结果按期刊名磁盘缓存，
+    同一期刊重复整理时是命中缓存、无网络开销。
+    """
+    venue = (row.get("期刊会议", "") or "").strip()
+    if not venue:
+        return "期刊等级：无期刊名，跳过"
+    if not secret_key:
+        return "期刊等级：未配置 EasyScholar key，跳过"
+    try:
+        result = easyscholar.derive_updates(
+            venue, secret_key, enabled_fields=enabled_fields
+        )
+    except Exception as exc:  # EasyScholarError / 网络异常都不该中断整理
+        return f"期刊等级：刷新失败（{exc}）"
+    level_text = (result.get("level_text", "") or "").strip()
+    row["期刊等级_自动"] = level_text
+    return f"期刊等级：{level_text or '（EasyScholar 未收录该期刊）'}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="整理 PDF 文献，生成 Markdown 笔记和索引表。")
     parser.add_argument("--source", action="append", help="额外指定 PDF 或文件夹来源，可重复。")
@@ -900,6 +929,17 @@ def main() -> None:
         model = str(settings.get("claude_cli", {}).get("model") or "claude-sonnet-4-5")
     print(f"模型：{provider} / {model}", flush=True)
     tracking_entries = load_tracking_journals(settings)
+
+    # EasyScholar 期刊等级：整理每篇文献时，最后一步刷新「期刊等级_自动」。
+    es_cfg = settings.get("easyscholar", {}) or {}
+    es_env = (es_cfg.get("api_key_env") or "EASYSCHOLAR_SECRET_KEY").strip()
+    es_key = os.environ.get(es_env, "").strip()
+    es_fields = es_cfg.get("enabled_fields") or list(easyscholar.DEFAULT_ENABLED_FIELDS)
+    if es_key:
+        print("整理时将为每篇自动刷新期刊等级（EasyScholar）。", flush=True)
+    else:
+        print(f"未配置环境变量 {es_env}，本次整理跳过期刊等级刷新。", flush=True)
+
     note_prompt = read_text_if_exists(ROOT / "prompts" / "note_prompt.md")
     classify_prompt = read_text_if_exists(ROOT / "prompts" / "classify_prompt.md")
 
@@ -949,6 +989,7 @@ def main() -> None:
                 manual_note = extract_manual_note(note_path)
                 row = row_from_ai(ai, file_hash, pdf, pdf_path, note_path, settings, existing=existing)
                 apply_tracking_journal(row, tracking_entries)
+                print("  " + refresh_journal_rank(row, es_key, es_fields), flush=True)
                 atomic_write_text(note_path, render_note(ai, row, "../pdfs/" + pdf_path.name, manual_note))
                 rows_by_hash[file_hash] = row
                 if file_hash not in row_order:
@@ -978,6 +1019,7 @@ def main() -> None:
         pdf_rel_from_note = "../pdfs/" + pdf_path.name
         row = row_from_ai(ai, file_hash, pdf, pdf_path, note_path, settings, existing=existing)
         apply_tracking_journal(row, tracking_entries)
+        print("  " + refresh_journal_rank(row, es_key, es_fields), flush=True)
         atomic_write_text(note_path, render_note(ai, row, pdf_rel_from_note, manual_note))
         rows_by_hash[file_hash] = row
         if file_hash not in row_order:

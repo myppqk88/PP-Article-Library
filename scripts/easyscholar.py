@@ -205,15 +205,24 @@ def _format_field(label: str, value: Any) -> str:
 
     规则：
     - 值为空 → 返回空串
-    - 值看起来是 "是 / yes / Y / true / 1" → 只显示 label（说明被收录）
-    - 否则 → 直接拼接 "label+value"，不加冒号（"中科院1区"、"SSCI1区"）
+    - 值表示「被收录」(是/yes/Y/true/1)，或值本身就等于 label → 只显示 label。
+      EasyScholar 的 EI 字段值常常就是 "EI"，不去重就会显示成 "EIEI"。
+    - 值已经以 label 开头 → 直接用值，不再前缀一遍 label。
+    - 否则 → "label:value"，用冒号分隔。不加分隔符时 "FMS"+"A" 会糊成
+      "FMSA"、"AJG"+"3" 会糊成 "AJG3"，读不出 等级体系/级别 的结构。
     """
     text = str(value or "").strip()
     if not text:
         return ""
-    if text.lower() in {"y", "yes", "true", "1", "是"}:
+    low = text.lower()
+    label_low = label.lower()
+    if low in {"y", "yes", "true", "1", "是"}:
         return label
-    return f"{label}{text}"
+    if low == label_low:
+        return label
+    if low.startswith(label_low):
+        return text
+    return f"{label}:{text}"
 
 
 def derive_updates(

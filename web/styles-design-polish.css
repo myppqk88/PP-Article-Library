@@ -1,0 +1,324 @@
+/* ============================================================================
+ * 设计优化 · 第 1 批 —— 纯 CSS 小手术，零结构风险。
+ *
+ * 必须最后加载（在 styles.css / styles-features.css / styles-design.css 之后），
+ * 这样同特异度下覆盖生效。删掉这个文件即可整体回滚。
+ *
+ * 改动：
+ *   1. 圆角收一档     —— card 12→10、design-layer button 8→6
+ *   2. 次按钮透明底   —— secondary 默认 transparent，hover 才浮 panel-soft
+ *   3. primary 限额   —— 橙色只留给区域的「动词」按钮；save* 一律降为中性
+ *   4. 去装饰图标     —— 带文字标签的 reader 动作按钮去掉 SVG 图标
+ * ========================================================================== */
+
+/* ---- 1. 圆角收一档 ----------------------------------------------------- */
+/* design-layer 组件用 --dc-r-*；把 button 8→6、card 12→10 与 styles.css 的
+   --radius-sm(6) / --radius(10) 对齐，整套 UI 圆角统一、少一分「塑料感」。 */
+:root {
+  --dc-r-button: 6px;
+  --dc-r-card: 10px;
+}
+
+/* ---- 2. 次按钮透明底 --------------------------------------------------- */
+/* 默认状态不画灰底块，只留边框（分隔感不丢）；hover 才浮现 panel-soft。 */
+button.secondary,
+.button-link.ghost {
+  background: transparent;
+}
+button.secondary:hover,
+.button-link.ghost:hover {
+  background: var(--panel-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+/* ---- 3. primary 数量限额 ---------------------------------------------- */
+/* styles.css 把一长串 save* 按钮都染成橙色 → 整屏 3-4 颗橙块、注意力分散。
+   橙色只保留给各区域真正的「动作动词」：整理新文献 / 帮我阅读 / AI 发送。
+   所有 save* 按钮降为中性外观（功能不变，只是视觉减重）。 */
+button#saveNoteBtn,
+button#saveSettingsBtn,
+button#savePromptsBtn,
+button#saveJournalsBtn,
+button#saveCategoryTreeBtn,
+button#savePaperCategoryBtn,
+button#saveMetaBtn,
+button#saveImageAskBtn,
+button#scanRefreshBtn {
+  background: var(--panel-strong);
+  border-color: var(--line);
+  color: var(--text);
+  font-weight: 400;
+}
+button#saveNoteBtn:hover,
+button#saveSettingsBtn:hover,
+button#savePromptsBtn:hover,
+button#saveJournalsBtn:hover,
+button#saveCategoryTreeBtn:hover,
+button#savePaperCategoryBtn:hover,
+button#saveMetaBtn:hover,
+button#saveImageAskBtn:hover,
+button#scanRefreshBtn:hover {
+  background: var(--panel-soft);
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+
+/* 帮我阅读 = 阅读区的「动词」，升为该区域唯一 primary（filled 橙）。
+   disabled 时仍由基础 button:disabled 的 opacity 变暗。 */
+button#helpReadBtn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+button#helpReadBtn:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+
+/* ---- 4. 去装饰图标 ---------------------------------------------------- */
+/* 「帮我阅读 / 刷新等级 / 新窗口」都有清晰的文字标签，SVG 只是装饰。
+   去掉它们让按钮更干净。删除按钮(图标-only)和设置 ⚙ 保留——它们靠图标表意。 */
+#helpReadBtn svg,
+#refreshRankBtn svg,
+#openPdfLink svg {
+  display: none;
+}
+
+/* ---- 5. 分类框：长分类名不再顶破容器 --------------------------------- */
+/* 「Mapping Open Science Policy in China: A Structural, Temporal, and Spatial
+   Analysis」这种超长分类名，之前 .dc-chip 没有宽度上限，单行撑爆整张
+   .dc-meta-cat-card。让 flex 子项允许收缩、chip 文字在容器内换行。 */
+.dc-meta-cat-card,
+.dc-meta-cat-rows,
+.dc-meta-cat-row {
+  min-width: 0;
+  max-width: 100%;
+}
+.dc-meta-cat-card { overflow: hidden; }
+.dc-meta-cat-row .dc-chip,
+.dc-meta-cat-row .dc-chip-accent {
+  display: inline-block;     /* inline-block 换行最可靠（这些 chip 只有文字） */
+  white-space: normal;       /* 允许 chip 内文字换行，不再单行无限延伸 */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  line-height: 1.45;
+  border-radius: 8px;        /* 多行时 999px 全圆角会变怪，收成普通圆角 */
+  text-align: left;
+  height: auto;
+}
+/* 面包屑分隔符 › 不要被挤压换行 */
+.dc-meta-cat-row .dc-breadcrumb-sep { flex-shrink: 0; }
+
+/* ---- 6. 论文卡片徽章：超长分类名不再冲出卡片 -------------------------- */
+/* 左侧论文列表卡片底部的 .badge 行直接把一级/二级分类名做成徽章。像
+   「Mapping Open Science Policy in China: A Structural, Temporal, and Spatial
+   Analysis」这种超长分类名，之前 .badge 单行无限延伸、冲破 .paper-item
+   右边界。列表里徽章只需「瞥一眼」，所以单行截断 + 省略号即可——完整分类名
+   在右侧元信息面板可见。限宽靠 .badge 自己（min-width:0 让 flex 子项可收缩，
+   max-width:100% 封顶，overflow+ellipsis 出省略号）。
+   注意：.paper-item 是 <button>，绝不能给它加 overflow:hidden —— 那会让
+   按钮内 .paper-title 的 display:-webkit-box 退化成 flow-root、高度塌成 0，
+   整张卡片塌成一条 24px 的线。 */
+.paper-item .badge-row { min-width: 0; max-width: 100%; }
+.paper-item .badge {
+  min-width: 0;              /* flex 子项默认 min-width:auto，会顶破 max-width */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;       /* 单行截断，超长名出省略号 */
+}
+
+/* ---- 7. 追踪期刊库表头：与下方数据行对齐 ------------------------------ */
+/* 表头 7 列与数据行共用同一套 grid，但表头 <span> 默认左贴单元格边，
+   数据行 <input> 有 6px 内边距 → 文字错位；FT50 / UTD24 / ABS3 三个布尔
+   列的 <select> 也没居中。这里：文本列表头缩进 6px 对齐 input，三个布尔
+   列的表头 + select 一起居中。 */
+.journal-row.journal-header span:nth-child(1),
+.journal-row.journal-header span:nth-child(2),
+.journal-row.journal-header span:nth-child(6) {
+  padding-left: 6px;
+}
+.journal-row.journal-header span:nth-child(3),
+.journal-row.journal-header span:nth-child(4),
+.journal-row.journal-header span:nth-child(5) {
+  text-align: center;
+}
+.journal-row select {
+  text-align: center;
+  text-align-last: center;
+}
+
+/* ---- 8. 笔记顶部「一句话总结」框 ------------------------------------- */
+/* 笔记面板顶部（预览/编辑切换条 下方）的一句话总结框：整理新文献时由
+   AI一句话总结 字段自动填入，可手动编辑（自动保存），右上「✨ AI 生成」
+   按钮可让 AI 读全文重新生成。 */
+.note-summary-box {
+  flex: 0 0 auto;
+  border: 1px solid var(--line, #e6e1d4);
+  border-radius: 8px;
+  background: var(--panel-soft, #f5f3eb);
+  padding: 7px 9px 8px;
+  margin: 0 0 8px;
+}
+.note-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.note-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted, #807a6f);
+}
+.note-summary-label::before { content: "💡 "; }
+#oneSentenceSummary {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--line, #e6e1d4);
+  border-radius: 6px;
+  background: var(--panel-strong, #fcfbf7);
+  padding: 6px 9px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-strong, #2c2a25);
+  font-family: var(--font-sans);
+  resize: vertical;
+  min-height: 42px;
+}
+#oneSentenceSummary:focus {
+  outline: none;
+  border-color: var(--accent, #cc785c);
+  box-shadow: 0 0 0 3px var(--accent-soft, rgba(204,120,92,0.15));
+}
+.ai-gen-btn {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 2px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--accent, #cc785c);
+  background: var(--accent-tint, #f7ede8);
+  color: var(--accent-strong, #b25f43);
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ai-gen-btn:hover {
+  background: var(--accent, #cc785c);
+  color: #fff;
+}
+.ai-gen-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---- 9. 统一所有关闭按钮：一个干净的圆形 ✕ 图标 --------------------- */
+/* 关闭按钮散落在 index.html 和多个补丁里，样式五花八门：有的「×关闭」、
+   有的纯文字「关闭」、有的橙色 primary、有的圆形 ×。这里用一套 !important
+   规则把它们全部强制统一成同一个圆形 ✕ 图标钮，并去掉「关闭」中文。
+   !important 是必要的 —— 要盖过各补丁自带的 #modal #btn 高优先级规则、
+   以及快捷键面板关闭钮的 inline style。
+   注意：「关闭」文字节点只是用 font-size:0 视觉隐藏，仍留在 DOM 里充当
+   屏幕阅读器的无障碍标签。 */
+#closeSettingsBtn,
+#closeCitationManagerBtn,
+#closeCategoryBtn,
+#closeTreeManagerBtn,
+#closeExportCategoryBtn,
+#closeImageAskBtn,
+#closeTranslateBtn,
+#closeCategoryV2Btn,
+#dcCoauthClose,
+#dcCheatClose,
+#hrOverlayClose {
+  box-sizing: border-box !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  border-radius: 50% !important;
+  border: 1px solid var(--line, #e6e1d4) !important;
+  background: transparent !important;
+  color: var(--muted, #807a6f) !important;
+  font-size: 0 !important;              /* 吃掉「关闭」中文 */
+  line-height: 1 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+#closeSettingsBtn::before,
+#closeCitationManagerBtn::before,
+#closeCategoryBtn::before,
+#closeTreeManagerBtn::before,
+#closeExportCategoryBtn::before,
+#closeImageAskBtn::before,
+#closeTranslateBtn::before,
+#closeCategoryV2Btn::before,
+#dcCoauthClose::before,
+#dcCheatClose::before,
+#hrOverlayClose::before {
+  content: "✕" !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+}
+#closeSettingsBtn:hover,
+#closeCitationManagerBtn:hover,
+#closeCategoryBtn:hover,
+#closeTreeManagerBtn:hover,
+#closeExportCategoryBtn:hover,
+#closeImageAskBtn:hover,
+#closeTranslateBtn:hover,
+#closeCategoryV2Btn:hover,
+#dcCoauthClose:hover,
+#dcCheatClose:hover,
+#hrOverlayClose:hover {
+  background: var(--accent-tint, #f7ede8) !important;
+  border-color: var(--accent, #cc785c) !important;
+  color: var(--accent-strong, #b25f43) !important;
+}
+
+/* ---- 10. 论文列表徽章：一级 / 二级 分类用浅色区分层级 ---------------- */
+/* 左侧论文卡片底部的徽章里，一级分类和二级分类之前同色、糊成一片。
+   这里给它们各上一个克制的浅色：一级 = 暖砂色，二级 = 雾霾绿灰，
+   都很淡、不扎眼，但能一眼分出层级。期刊指标 / 星标 / 扫描件仍是中性灰。 */
+.paper-item .badge.badge-cat1 {
+  background: #f1e8da;
+  border-color: #e5d8c3;
+  color: #8d6a45;
+}
+.paper-item .badge.badge-cat2 {
+  background: #e6ebe4;
+  border-color: #d6ddd0;
+  color: #627659;
+}
+/* 深色模式：浅色块在深底上会发亮刺眼，换成半透明色调 */
+[data-theme="dark"] .paper-item .badge.badge-cat1 {
+  background: rgba(204, 152, 100, 0.16);
+  border-color: rgba(204, 152, 100, 0.32);
+  color: #d3a878;
+}
+[data-theme="dark"] .paper-item .badge.badge-cat2 {
+  background: rgba(140, 172, 130, 0.16);
+  border-color: rgba(140, 172, 130, 0.32);
+  color: #9fb795;
+}
+
+/* ---- 11. 夜间模式：期刊等级 chip 适配 -------------------------------- */
+/* .rank-chip 的浅彩底色（rank-cas/ssci/ei…）是写死的浅色，夜间模式下
+   浅色块压在深底上会发亮刺眼。用 invert + hue-rotate 把它们整体转深、
+   同时保留色相 —— 红还是红、蓝还是蓝。rank-default 用的是主题 token、
+   已随夜间模式自动变深，排除掉不参与翻转。 */
+[data-theme="dark"] .rank-chip:not(.rank-default) {
+  filter: invert(1) hue-rotate(180deg);
+}
