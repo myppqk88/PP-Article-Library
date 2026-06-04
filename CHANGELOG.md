@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.2.4 - 2026-06-04
+
+- Added a first-run configuration wizard for main AI provider, translation, EasyScholar, vision model, and OCR.
+- Added local onboarding completion state in `config/settings.yaml` and a "配置向导" entry in the overflow menu.
+
 ## v0.2.3 - 2026-05-22
 
 - Moved Citation management out of Settings into a dedicated modal opened from the `+` button beside the top-bar "帮我引用" selector.

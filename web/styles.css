@@ -1494,6 +1494,131 @@ label > input, label > select, label > textarea {
   letter-spacing: -0.005em;
 }
 
+/* First-run onboarding */
+.modal-card.onboarding-card {
+  max-width: 980px;
+  width: min(96vw, 980px);
+  padding: 0;
+  overflow: hidden;
+  gap: 0;
+}
+.onboarding-head {
+  padding: 20px 22px 14px;
+  background: linear-gradient(135deg, var(--panel-strong), var(--panel-soft));
+}
+.onboarding-head p { margin: 6px 0 0; max-width: 660px; line-height: 1.55; }
+.onboarding-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.onboarding-steps button {
+  border: none;
+  border-right: 1px solid var(--line-soft);
+  border-radius: 0;
+  background: transparent;
+  padding: 11px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.onboarding-steps button:last-child { border-right: none; }
+.onboarding-steps button.active {
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+.onboarding-panel {
+  padding: 20px 22px 16px;
+  min-height: 390px;
+  overflow: auto;
+}
+.onboarding-copy h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.onboarding-copy p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 780px;
+}
+.onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+.onboarding-grid label {
+  min-width: 0;
+}
+.onboarding-grid .onboarding-check,
+.onboarding-grid .onboarding-note,
+.onboarding-grid .onboarding-inline,
+.onboarding-hint,
+.onboarding-summary {
+  grid-column: 1 / -1;
+}
+.onboarding-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+}
+.onboarding-note,
+.onboarding-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  background: var(--panel-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.onboarding-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.onboarding-summary-item {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.onboarding-summary-item strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: var(--text-strong);
+}
+.onboarding-summary-item span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 13px 22px;
+  background: var(--panel);
+}
+.onboarding-actions #onboardingStatus {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .modal { padding: 10px; }
+  .onboarding-steps { grid-template-columns: repeat(2, 1fr); }
+  .onboarding-grid,
+  .onboarding-summary { grid-template-columns: 1fr; }
+  .onboarding-actions { flex-wrap: wrap; }
+  .onboarding-actions #onboardingStatus { order: 5; width: 100%; flex-basis: 100%; }
+}
+
 /* Settings modal: tabs (Phase 5 will move to side-nav) */
 .settings-tabs {
   display: flex;

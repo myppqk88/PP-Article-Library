@@ -13,6 +13,7 @@ import threading
 import time
 import traceback
 import uuid
+from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -1291,6 +1292,72 @@ def settings_payload() -> dict[str, Any]:
     }
 
 
+def onboarding_payload() -> dict[str, Any]:
+    """Return first-run setup status for the browser onboarding wizard."""
+    settings = load_settings()
+    status = dict(settings.get("onboarding", {}) or {})
+    payload = settings_payload()
+    provider = str(payload.get("api", {}).get("provider", "")).strip().lower()
+    main_ready = bool(payload.get("api", {}).get("has_api_key"))
+    if provider in {"codex", "codex_cli", "codex-cli"}:
+        main_ready = True
+    if provider in {"claude", "claude_cli", "claude-cli"}:
+        main_ready = True
+
+    translation = translation_settings(settings)
+    ollama_cfg = translation.get("ollama", {}) or {}
+    ollama_base_url = str(ollama_cfg.get("base_url") or "http://127.0.0.1:11434")
+    ollama = _quick_ollama_status(ollama_base_url)
+
+    return {
+        "ok": True,
+        "completed": bool(status.get("completed", False)),
+        "completed_at": status.get("completed_at", ""),
+        "main_ready": main_ready,
+        "active_provider": provider,
+        "translation_provider": translation.get("provider", "ollama"),
+        "ollama": ollama,
+    }
+
+
+def save_onboarding_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    settings = load_settings()
+    onboarding = settings.setdefault("onboarding", {})
+    onboarding["completed"] = bool(payload.get("completed", True))
+    onboarding["completed_at"] = datetime.now().isoformat(timespec="seconds")
+    save_settings_yaml(settings)
+    return onboarding
+
+
+def _quick_ollama_status(base_url: str) -> dict[str, Any]:
+    """Short Ollama probe for first-run UI; never block app load for long."""
+    import requests
+    url = (base_url or "http://127.0.0.1:11434").rstrip("/") + "/api/tags"
+    try:
+        resp = requests.get(url, timeout=0.8)
+        if resp.status_code >= 400:
+            return {
+                "running": False,
+                "base_url": base_url,
+                "models": [],
+                "error": f"HTTP {resp.status_code}",
+            }
+        data = resp.json()
+        models = []
+        for item in data.get("models", []) or []:
+            name = item.get("name") or item.get("model") or ""
+            if name:
+                models.append(name)
+        return {"running": True, "base_url": base_url, "models": models[:20], "error": ""}
+    except Exception as exc:
+        return {
+            "running": False,
+            "base_url": base_url,
+            "models": [],
+            "error": str(exc)[:180],
+        }
+
+
 def _probe_ocr_engines() -> dict[str, bool]:
     """Cheap import probe so the UI can tell users which engines are usable."""
     import importlib.util
@@ -1961,6 +2028,8 @@ class LiteratureHandler(BaseHTTPRequestHandler):
                 )
             if path == "/api/settings":
                 return self.send_json(settings_payload())
+            if path == "/api/onboarding":
+                return self.send_json(onboarding_payload())
             if path == "/api/prompts":
                 return self.api_prompts()
             if path == "/api/tracking-journals":
@@ -2036,6 +2105,8 @@ class LiteratureHandler(BaseHTTPRequestHandler):
                 return self.api_save_ui_settings()
             if parsed.path == "/api/settings":
                 return self.api_save_settings()
+            if parsed.path == "/api/onboarding":
+                return self.api_save_onboarding()
             if parsed.path == "/api/prompts":
                 return self.api_save_prompts()
             if parsed.path == "/api/tracking-journals":
@@ -2645,6 +2716,11 @@ class LiteratureHandler(BaseHTTPRequestHandler):
         settings = save_settings_payload(data)
         save_rows(load_rows())
         return self.send_json({"ok": True, "settings": settings_payload()})
+
+    def api_save_onboarding(self) -> None:
+        data = read_body(self)
+        save_onboarding_payload(data)
+        return self.send_json(onboarding_payload())
 
     def api_prompts(self) -> None:
         note_path = ROOT / "prompts" / "note_prompt.md"

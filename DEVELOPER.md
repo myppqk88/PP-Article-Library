@@ -404,6 +404,7 @@ CLI + Library 双入口：
 > 写日期 + 一句话；细节在 git commit message 里。
 
 - 2026-05-21 Citation 管理入口从设置移到顶栏「帮我引用」下拉框右侧 `+`，作为独立弹窗打开
+- 2026-06-04 新增首次启动配置向导：引导用户填写主 AI、翻译、EasyScholar、视觉模型和 OCR，并在 `config/settings.yaml:onboarding.completed` 记录完成状态
 - 2026-05-22 GitHub 首页补充 logo 与图文导览素材，公开 README 更新为 v0.2.3 下载说明
 - 2026-05-22 Windows 端优化同步：新增一句话总结、阅读区压缩、元信息表单瘦身、笔记护眼背景和 EasyScholar 等级格式修正
 - 2026-05-21 README 重写为中英双版 GitHub 首页，macOS 首次打开直接给 `xattr` 解除隔离流程

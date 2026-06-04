@@ -56,6 +56,10 @@
                 <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/><path d="M3 7h10"/></svg></span>
                 按分类导出
               </button>
+              <button id="openOnboardingBtn" title="重新打开第一次配置向导">
+                <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.5a5.5 5.5 0 105.5 5.5"/><path d="M8 5v3l2 1.5"/><path d="M11.5 2.5h2v2"/></svg></span>
+                配置向导
+              </button>
               <div class="menu-sep"></div>
               <a class="button-link" href="/file?path=library/index/papers.xlsx" target="_blank" rel="noreferrer" style="border:none;background:transparent;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13px;width:100%;text-align:left;">
                 <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/></svg></span>
@@ -726,6 +730,150 @@
             <div id="journalRows"></div>
           </div>
         </section>
+      </div>
+    </div>
+
+    <div id="onboardingModal" class="modal hidden">
+      <div class="modal-card onboarding-card">
+        <div class="modal-head onboarding-head">
+          <div>
+            <h2>第一次使用配置向导</h2>
+            <p class="muted">把主 AI、翻译、可选服务一次填完；之后也可以从「更多操作 → 配置向导」重新打开。</p>
+          </div>
+          <button id="closeOnboardingBtn" class="secondary" type="button">稍后再说</button>
+        </div>
+
+        <div class="onboarding-steps" aria-label="配置步骤">
+          <button class="active" data-onboarding-jump="0" type="button">1 主 AI</button>
+          <button data-onboarding-jump="1" type="button">2 翻译</button>
+          <button data-onboarding-jump="2" type="button">3 可选功能</button>
+          <button data-onboarding-jump="3" type="button">4 完成</button>
+        </div>
+
+        <section class="onboarding-panel" data-onboarding-step="0">
+          <div class="onboarding-copy">
+            <h3>先选一个主 AI</h3>
+            <p>主 AI 用来整理新文献、生成笔记、帮我阅读、帮我引用。新用户最省心的是 DeepSeek 或 Qwen：填一个 API key 就能用。</p>
+          </div>
+          <div class="onboarding-grid">
+            <label>你想用哪种主模型
+              <select id="onboardingProvider">
+                <option value="deepseek">DeepSeek（推荐：便宜、中文稳定）</option>
+                <option value="qwen">Qwen / 通义千问（国内用户友好）</option>
+                <option value="openai_compatible">OpenAI 兼容接口（OpenAI / 代理 / 其它平台）</option>
+                <option value="claude_cli">Claude Code CLI（已安装并登录 Claude Code）</option>
+                <option value="codex_cli">Codex CLI（已安装并登录 Codex）</option>
+              </select>
+            </label>
+            <label data-onboarding-main="api">API Key
+              <input id="onboardingMainApiKey" type="password" placeholder="粘贴 key；会保存到本地 .env" />
+            </label>
+            <label data-onboarding-main="api">Base URL
+              <input id="onboardingMainBaseUrl" />
+            </label>
+            <label data-onboarding-main="api">模型
+              <input id="onboardingMainModel" />
+            </label>
+            <label data-onboarding-main="api">保存到哪个环境变量
+              <input id="onboardingMainKeyEnv" />
+            </label>
+            <label data-onboarding-main="cli">CLI 命令
+              <input id="onboardingCliCommand" placeholder="留空使用默认命令" />
+            </label>
+            <label data-onboarding-main="cli">CLI 模型
+              <input id="onboardingCliModel" placeholder="留空使用默认模型" />
+            </label>
+            <label data-onboarding-main="claude">ANTHROPIC_API_KEY（可选）
+              <input id="onboardingClaudeApiKey" type="password" placeholder="已 claude login 可不填" />
+            </label>
+          </div>
+          <p id="onboardingProviderHint" class="onboarding-hint"></p>
+        </section>
+
+        <section class="onboarding-panel hidden" data-onboarding-step="1">
+          <div class="onboarding-copy">
+            <h3>再选翻译方式</h3>
+            <p>划词翻译可以走本地 Ollama（有些用户口头叫“欧拉”），也可以直接复用上一步的 API。没装本地模型时，选 API 最省事。</p>
+          </div>
+          <div class="onboarding-grid">
+            <label>翻译怎么跑
+              <select id="onboardingTranslationMode">
+                <option value="api">复用主 API 翻译（推荐给新用户）</option>
+                <option value="ollama">本地 Ollama / 欧拉（零成本，需要已安装并拉过模型）</option>
+              </select>
+            </label>
+            <label data-onboarding-translation="ollama">Ollama 地址
+              <input id="onboardingOllamaBaseUrl" placeholder="http://127.0.0.1:11434" />
+            </label>
+            <label data-onboarding-translation="ollama">翻译模型
+              <input id="onboardingOllamaModel" placeholder="qwen2.5:14b / qwen3:14b / llama3:8b" />
+            </label>
+            <div data-onboarding-translation="ollama" class="onboarding-inline">
+              <button id="detectOllamaBtn" class="secondary" type="button">检测本地 Ollama</button>
+              <span id="onboardingOllamaStatus" class="muted"></span>
+            </div>
+            <p data-onboarding-translation="api" class="onboarding-note">
+              复用主 API 时，不需要再填一份 key。翻译会使用轻量模型，适合多数用户先跑起来。
+            </p>
+          </div>
+        </section>
+
+        <section class="onboarding-panel hidden" data-onboarding-step="2">
+          <div class="onboarding-copy">
+            <h3>可选功能，先跳过也没关系</h3>
+            <p>这些不是启动必需项。EasyScholar 用来查期刊等级；视觉模型用于带页面截图问 AI；OCR 用于扫描版 PDF。</p>
+          </div>
+          <div class="onboarding-grid">
+            <label class="checkline onboarding-check"><input id="onboardingEasyScholarEnabled" type="checkbox" checked /> 启用 EasyScholar 期刊等级</label>
+            <label>EasyScholar secret key（可选）
+              <input id="onboardingEasyScholarKey" type="password" placeholder="不填也能先用；以后在设置里补" />
+            </label>
+            <label>视觉模型
+              <select id="onboardingVisionMode">
+                <option value="none">暂不开启</option>
+                <option value="qwen_vl">Qwen-VL（推荐中文场景）</option>
+                <option value="openai_vision">OpenAI Vision</option>
+                <option value="claude_cli">Claude CLI（复用 Claude Code 登录）</option>
+              </select>
+            </label>
+            <label data-onboarding-vision="api">视觉 API Key
+              <input id="onboardingVisionApiKey" type="password" placeholder="可选；会保存到本地 .env" />
+            </label>
+            <label data-onboarding-vision="api">视觉 Base URL
+              <input id="onboardingVisionBaseUrl" />
+            </label>
+            <label data-onboarding-vision="api">视觉模型
+              <input id="onboardingVisionModel" />
+            </label>
+            <label data-onboarding-vision="api">视觉 Key 环境变量
+              <input id="onboardingVisionKeyEnv" />
+            </label>
+            <label class="checkline onboarding-check"><input id="onboardingOcrEnabled" type="checkbox" checked /> 遇到扫描版 PDF 时尝试 OCR</label>
+            <label>OCR 方式
+              <select id="onboardingOcrEngine">
+                <option value="rapidocr">RapidOCR（推荐，已安装就直接用）</option>
+                <option value="cloud">云 OCR（需要视觉接口）</option>
+                <option value="none">暂时关闭</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="onboarding-panel hidden" data-onboarding-step="3">
+          <div class="onboarding-copy">
+            <h3>保存后就可以开始用了</h3>
+            <p>这些配置会写入本地 `config/settings.yaml` 和 `.env`。公开 GitHub 仓库不会包含你的 key、PDF、笔记或 citation 文件。</p>
+          </div>
+          <div id="onboardingSummary" class="onboarding-summary"></div>
+        </section>
+
+        <div class="onboarding-actions">
+          <button id="onboardingBackBtn" class="secondary" type="button">上一步</button>
+          <span id="onboardingStatus" class="muted"></span>
+          <button id="skipOnboardingBtn" class="secondary" type="button">跳过并不再自动弹出</button>
+          <button id="onboardingNextBtn" type="button">下一步</button>
+          <button id="finishOnboardingBtn" class="primary hidden" type="button">保存并完成</button>
+        </div>
       </div>
     </div>
 

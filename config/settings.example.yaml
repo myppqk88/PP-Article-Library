@@ -5,6 +5,10 @@ project:
   name: local-literature-hub
   language: zh-CN
 
+onboarding:
+  completed: false
+  completed_at: ''
+
 paths:
   inbox: inbox
   initial_sources: []

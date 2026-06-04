@@ -53,6 +53,63 @@ const providerIds = {
   },
 };
 
+const onboardingState = {
+  step: 0,
+  settings: null,
+  translation: null,
+  easyscholar: null,
+  status: null,
+};
+
+const onboardingProviderPresets = {
+  deepseek: {
+    label: "DeepSeek",
+    base_url: "https://api.deepseek.com",
+    model: "deepseek-chat",
+    api_key_env: "DEEPSEEK_API_KEY",
+    hint: "适合大多数新用户：中文稳定、费用低。去 DeepSeek 控制台复制 API key，粘贴到这里即可。",
+  },
+  qwen: {
+    label: "Qwen / 通义千问",
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model: "qwen-plus",
+    api_key_env: "QWEN_API_KEY",
+    hint: "适合国内网络和中文场景。去阿里云 DashScope 控制台复制 API key。",
+  },
+  openai_compatible: {
+    label: "OpenAI 兼容接口",
+    base_url: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+    api_key_env: "OPENAI_API_KEY",
+    hint: "适合 OpenAI、代理地址或其它兼容平台。把平台给你的 Base URL、模型名和 key 填上。",
+  },
+  claude_cli: {
+    label: "Claude Code CLI",
+    command: "",
+    model: "claude-sonnet-4-5",
+    hint: "如果你已经安装 Claude Code 并跑过 claude login，可以选这个；不需要 API key。",
+  },
+  codex_cli: {
+    label: "Codex CLI",
+    command: "codex",
+    model: "gpt-5.4",
+    hint: "如果你已经安装 Codex CLI 并登录，可以选这个；不需要在这里填主模型 API key。",
+  },
+};
+
+const onboardingVisionPresets = {
+  qwen_vl: {
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model: "qwen-vl-plus",
+    api_key_env: "QWEN_API_KEY",
+  },
+  openai_vision: {
+    base_url: "https://api.openai.com/v1",
+    model: "gpt-4o-mini",
+    api_key_env: "OPENAI_API_KEY",
+  },
+};
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -871,6 +928,450 @@ async function saveEasyscholarSettings() {
     $("easyscholarStatus").textContent = `失败：${e.message}`;
   } finally {
     $("saveEasyscholarBtn").disabled = false;
+  }
+}
+
+function isOnboardingApiProvider(provider) {
+  return ["deepseek", "qwen", "openai_compatible"].includes(provider);
+}
+
+function onboardingProviderLabel(provider) {
+  return onboardingProviderPresets[provider]?.label || provider || "未选择";
+}
+
+function currentOnboardingProviderConfig(provider) {
+  const preset = onboardingProviderPresets[provider] || {};
+  const settings = onboardingState.settings || {};
+  const mergeNonEmpty = (base, incoming = {}) => {
+    const out = { ...base };
+    for (const [key, value] of Object.entries(incoming || {})) {
+      if (value !== "" && value !== null && value !== undefined) out[key] = value;
+    }
+    return out;
+  };
+  if (isOnboardingApiProvider(provider)) {
+    return mergeNonEmpty(preset, settings.provider_settings?.[provider] || {});
+  }
+  if (provider === "claude_cli") {
+    return mergeNonEmpty(preset, settings.claude_cli || {});
+  }
+  if (provider === "codex_cli") {
+    return mergeNonEmpty(preset, settings.codex_cli || {});
+  }
+  return { ...preset };
+}
+
+function applyOnboardingProviderPreset(provider) {
+  const cfg = currentOnboardingProviderConfig(provider);
+  if (isOnboardingApiProvider(provider)) {
+    $("onboardingMainBaseUrl").value = cfg.base_url || "";
+    $("onboardingMainModel").value = cfg.model || "";
+    $("onboardingMainKeyEnv").value = cfg.api_key_env || "";
+    $("onboardingMainApiKey").value = "";
+    $("onboardingMainApiKey").placeholder = cfg.has_api_key
+      ? "已配置，留空保留原 key"
+      : "粘贴 key；会保存到本地 .env";
+  } else {
+    $("onboardingCliCommand").value = cfg.command || "";
+    $("onboardingCliModel").value = cfg.model || "";
+    if ($("onboardingClaudeApiKey")) {
+      $("onboardingClaudeApiKey").value = "";
+      $("onboardingClaudeApiKey").placeholder = cfg.has_api_key
+        ? "已配置 ANTHROPIC_API_KEY，留空保留"
+        : "已 claude login 可不填";
+    }
+  }
+  updateOnboardingProviderUi();
+}
+
+function updateOnboardingProviderUi() {
+  const provider = $("onboardingProvider")?.value || "deepseek";
+  const apiMode = isOnboardingApiProvider(provider);
+  document.querySelectorAll("[data-onboarding-main='api']").forEach((el) => el.classList.toggle("hidden", !apiMode));
+  document.querySelectorAll("[data-onboarding-main='cli']").forEach((el) => el.classList.toggle("hidden", apiMode));
+  document.querySelectorAll("[data-onboarding-main='claude']").forEach((el) => el.classList.toggle("hidden", provider !== "claude_cli"));
+  const hint = onboardingProviderPresets[provider]?.hint || "";
+  if ($("onboardingProviderHint")) $("onboardingProviderHint").textContent = hint;
+  if ($("onboardingTranslationMode")) {
+    const trans = $("onboardingTranslationMode");
+    if (!apiMode && trans.value === "api") trans.value = "ollama";
+    updateOnboardingTranslationUi();
+  }
+}
+
+function updateOnboardingTranslationUi() {
+  const mode = $("onboardingTranslationMode")?.value || "api";
+  document.querySelectorAll("[data-onboarding-translation]").forEach((el) => {
+    el.classList.toggle("hidden", el.dataset.onboardingTranslation !== mode);
+  });
+}
+
+function applyOnboardingVisionPreset(mode) {
+  const isApi = ["qwen_vl", "openai_vision"].includes(mode);
+  document.querySelectorAll("[data-onboarding-vision='api']").forEach((el) => el.classList.toggle("hidden", !isApi));
+  if (!isApi) return;
+  const settingsVision = onboardingState.settings?.vision?.[mode] || {};
+  const cfg = { ...(onboardingVisionPresets[mode] || {}) };
+  for (const [key, value] of Object.entries(settingsVision)) {
+    if (value !== "" && value !== null && value !== undefined) cfg[key] = value;
+  }
+  $("onboardingVisionBaseUrl").value = cfg.base_url || "";
+  $("onboardingVisionModel").value = cfg.model || "";
+  $("onboardingVisionKeyEnv").value = cfg.api_key_env || "";
+  $("onboardingVisionApiKey").value = "";
+  $("onboardingVisionApiKey").placeholder = cfg.has_api_key
+    ? "已配置，留空保留原 key"
+    : "可选；会保存到本地 .env";
+}
+
+function renderOnboardingStep() {
+  const step = onboardingState.step;
+  document.querySelectorAll("[data-onboarding-step]").forEach((panel) => {
+    panel.classList.toggle("hidden", Number(panel.dataset.onboardingStep) !== step);
+  });
+  document.querySelectorAll("[data-onboarding-jump]").forEach((btn) => {
+    btn.classList.toggle("active", Number(btn.dataset.onboardingJump) === step);
+  });
+  $("onboardingBackBtn").disabled = step === 0;
+  $("onboardingNextBtn").classList.toggle("hidden", step === 3);
+  $("finishOnboardingBtn").classList.toggle("hidden", step !== 3);
+  if (step === 3) renderOnboardingSummary();
+}
+
+function renderOnboardingSummary() {
+  const provider = $("onboardingProvider").value;
+  const translationMode = $("onboardingTranslationMode").value;
+  const visionMode = $("onboardingVisionMode").value;
+  const mainDetail = isOnboardingApiProvider(provider)
+    ? `${$("onboardingMainModel").value || "未填模型"} · ${$("onboardingMainKeyEnv").value || "未填 key 名"}`
+    : `${$("onboardingCliModel").value || "默认模型"} · ${$("onboardingCliCommand").value || "默认命令"}`;
+  const translationDetail = translationMode === "ollama"
+    ? `Ollama · ${$("onboardingOllamaModel").value || "未填模型"}`
+    : "复用主 API / 兼容接口";
+  const easyDetail = $("onboardingEasyScholarEnabled").checked
+    ? ($("onboardingEasyScholarKey").value ? "启用 · 已填写 secret key" : "启用 · 暂未填 key")
+    : "关闭";
+  const visionDetail = visionMode === "none"
+    ? "暂不开启"
+    : `${visionMode} · ${$("onboardingVisionModel").value || "默认/复用模型"}`;
+  const ocrDetail = $("onboardingOcrEnabled").checked
+    ? `${$("onboardingOcrEngine").value}`
+    : "关闭";
+  $("onboardingSummary").innerHTML = [
+    ["主 AI", `${onboardingProviderLabel(provider)} · ${mainDetail}`],
+    ["翻译", translationDetail],
+    ["期刊等级", easyDetail],
+    ["视觉模型", visionDetail],
+    ["OCR", ocrDetail],
+    ["保存位置", "API key 写入本地 .env；其它设置写入 config/settings.yaml"],
+  ].map(([title, text]) => `
+    <div class="onboarding-summary-item">
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(text)}</span>
+    </div>
+  `).join("");
+}
+
+async function loadOnboardingDefaults() {
+  const [settings, translation, easyscholar, status] = await Promise.all([
+    api("/api/settings"),
+    api("/api/translation-settings"),
+    api("/api/easyscholar/settings"),
+    api("/api/onboarding"),
+  ]);
+  onboardingState.settings = settings;
+  onboardingState.translation = translation;
+  onboardingState.easyscholar = easyscholar;
+  onboardingState.status = status;
+
+  const activeProvider = isOnboardingApiProvider(settings.api?.provider)
+    || ["claude_cli", "codex_cli"].includes(settings.api?.provider)
+    ? settings.api.provider
+    : "deepseek";
+  $("onboardingProvider").value = activeProvider || "deepseek";
+  applyOnboardingProviderPreset($("onboardingProvider").value);
+
+  const ollamaRunning = !!status.ollama?.running;
+  const translationMode = translation.provider === "ollama" && ollamaRunning ? "ollama" : "api";
+  $("onboardingTranslationMode").value = translationMode;
+  $("onboardingOllamaBaseUrl").value = translation.ollama?.base_url || "http://127.0.0.1:11434";
+  $("onboardingOllamaModel").value =
+    translation.ollama?.model
+    || status.ollama?.models?.[0]
+    || "qwen2.5:14b";
+  $("onboardingOllamaStatus").textContent = ollamaRunning
+    ? `检测到 Ollama：${(status.ollama.models || []).slice(0, 3).join("、") || "已运行"}`
+    : "未检测到正在运行的 Ollama；没装也没关系，可用主 API 翻译。";
+  updateOnboardingTranslationUi();
+
+  $("onboardingEasyScholarEnabled").checked = easyscholar.enabled !== false;
+  $("onboardingEasyScholarKey").value = "";
+  $("onboardingEasyScholarKey").placeholder = easyscholar.has_api_key
+    ? "已配置，留空保留原 key"
+    : "不填也能先用；以后在设置里补";
+
+  const visionProvider = settings.vision?.provider || "qwen_vl";
+  const hasVisionKey =
+    settings.vision?.qwen_vl?.has_api_key
+    || settings.vision?.openai_vision?.has_api_key
+    || settings.vision?.claude_cli?.has_api_key;
+  $("onboardingVisionMode").value = hasVisionKey ? visionProvider : "none";
+  applyOnboardingVisionPreset($("onboardingVisionMode").value);
+
+  $("onboardingOcrEnabled").checked = settings.ocr?.enabled !== false;
+  $("onboardingOcrEngine").value = settings.ocr?.engine || "rapidocr";
+  $("onboardingStatus").textContent = "";
+}
+
+async function openOnboardingModal(opts = {}) {
+  $("onboardingModal").classList.remove("hidden");
+  onboardingState.step = 0;
+  renderOnboardingStep();
+  $("onboardingStatus").textContent = "正在读取本地配置…";
+  try {
+    await loadOnboardingDefaults();
+    renderOnboardingStep();
+    if (opts.auto && !onboardingState.status?.main_ready) {
+      $("onboardingStatus").textContent = "检测到主 AI 还没配置，先跟着向导填一下。";
+    }
+  } catch (error) {
+    $("onboardingStatus").textContent = "向导加载失败：" + error.message;
+  }
+}
+
+function closeOnboardingModal() {
+  $("onboardingModal").classList.add("hidden");
+}
+
+function buildOnboardingSettingsPayload() {
+  const provider = $("onboardingProvider").value;
+  const payload = {
+    provider,
+    provider_settings: {},
+    codex_cli: {},
+    claude_cli: {},
+    ocr: {
+      enabled: $("onboardingOcrEnabled").checked,
+      engine: $("onboardingOcrEnabled").checked ? $("onboardingOcrEngine").value : "none",
+    },
+  };
+  if (isOnboardingApiProvider(provider)) {
+    payload.provider_settings[provider] = {
+      base_url: $("onboardingMainBaseUrl").value,
+      model: $("onboardingMainModel").value,
+      api_key_env: $("onboardingMainKeyEnv").value,
+      api_key: $("onboardingMainApiKey").value,
+    };
+  }
+  if (provider === "codex_cli") {
+    payload.codex_cli = {
+      command: $("onboardingCliCommand").value,
+      model: $("onboardingCliModel").value || "gpt-5.4",
+      sandbox: "read-only",
+      timeout_seconds: 180,
+    };
+  }
+  if (provider === "claude_cli") {
+    payload.claude_cli = {
+      command: $("onboardingCliCommand").value,
+      model: $("onboardingCliModel").value || "claude-sonnet-4-5",
+      timeout_seconds: 240,
+      api_key: $("onboardingClaudeApiKey").value,
+    };
+  }
+  const visionMode = $("onboardingVisionMode").value;
+  if (visionMode === "claude_cli") {
+    payload.vision = { provider: "claude_cli" };
+  } else if (["qwen_vl", "openai_vision"].includes(visionMode)) {
+    payload.vision = {
+      provider: visionMode,
+      [visionMode]: {
+        base_url: $("onboardingVisionBaseUrl").value,
+        model: $("onboardingVisionModel").value,
+        api_key_env: $("onboardingVisionKeyEnv").value,
+        api_key: $("onboardingVisionApiKey").value,
+        timeout_seconds: 90,
+      },
+    };
+  }
+  return payload;
+}
+
+function buildOnboardingTranslationPayload() {
+  const mode = $("onboardingTranslationMode").value;
+  if (mode === "ollama") {
+    return {
+      provider: "ollama",
+      ollama: {
+        base_url: $("onboardingOllamaBaseUrl").value,
+        model: $("onboardingOllamaModel").value,
+        timeout_seconds: 120,
+      },
+      openai_compatible: onboardingState.translation?.openai_compatible || {},
+    };
+  }
+  const provider = $("onboardingProvider").value;
+  if (isOnboardingApiProvider(provider)) {
+    return {
+      provider: "openai_compatible",
+      ollama: {
+        base_url: $("onboardingOllamaBaseUrl").value || "http://127.0.0.1:11434",
+        model: $("onboardingOllamaModel").value || "qwen2.5:14b",
+        timeout_seconds: 120,
+      },
+      openai_compatible: {
+        base_url: $("onboardingMainBaseUrl").value,
+        model: $("onboardingMainModel").value,
+        api_key_env: $("onboardingMainKeyEnv").value,
+        api_key: $("onboardingMainApiKey").value,
+        timeout_seconds: 90,
+      },
+    };
+  }
+  return {
+    provider: "ollama",
+    ollama: {
+      base_url: $("onboardingOllamaBaseUrl").value || "http://127.0.0.1:11434",
+      model: $("onboardingOllamaModel").value || "qwen2.5:14b",
+      timeout_seconds: 120,
+    },
+    openai_compatible: onboardingState.translation?.openai_compatible || {},
+  };
+}
+
+function buildOnboardingEasyScholarPayload() {
+  return {
+    enabled: $("onboardingEasyScholarEnabled").checked,
+    api_key_env: "EASYSCHOLAR_SECRET_KEY",
+    api_key: $("onboardingEasyScholarKey").value,
+    enabled_fields: onboardingState.easyscholar?.enabled_fields || [],
+  };
+}
+
+function validateOnboardingBeforeSave() {
+  const provider = $("onboardingProvider").value;
+  if (isOnboardingApiProvider(provider)) {
+    const cfg = currentOnboardingProviderConfig(provider);
+    if (!$("onboardingMainBaseUrl").value.trim()) return "请填写主 AI 的 Base URL。";
+    if (!$("onboardingMainModel").value.trim()) return "请填写主 AI 的模型名。";
+    if (!$("onboardingMainKeyEnv").value.trim()) return "请填写 API key 环境变量名。";
+    if (!$("onboardingMainApiKey").value.trim() && !cfg.has_api_key) {
+      return "请粘贴主 AI 的 API key；如果暂时没有，可以点「跳过」先进入系统。";
+    }
+  }
+  if (provider === "claude_cli" && !$("onboardingClaudeApiKey").value.trim()) {
+    const cfg = currentOnboardingProviderConfig(provider);
+    if (!cfg.has_api_key) {
+      $("onboardingStatus").textContent = "Claude CLI 模式默认认为你已在终端运行过 claude login。";
+    }
+  }
+  const translationMode = $("onboardingTranslationMode").value;
+  if (translationMode === "ollama") {
+    if (!$("onboardingOllamaBaseUrl").value.trim()) return "请填写 Ollama 地址。";
+    if (!$("onboardingOllamaModel").value.trim()) return "请填写 Ollama 翻译模型名。";
+  }
+  const visionMode = $("onboardingVisionMode").value;
+  if (["qwen_vl", "openai_vision"].includes(visionMode)) {
+    const cfg = {
+      ...(onboardingVisionPresets[visionMode] || {}),
+      ...(onboardingState.settings?.vision?.[visionMode] || {}),
+    };
+    if (!$("onboardingVisionBaseUrl").value.trim()) return "请填写视觉模型 Base URL，或把视觉模型改成「暂不开启」。";
+    if (!$("onboardingVisionModel").value.trim()) return "请填写视觉模型名，或把视觉模型改成「暂不开启」。";
+    if (!$("onboardingVisionKeyEnv").value.trim()) return "请填写视觉模型 key 环境变量名，或把视觉模型改成「暂不开启」。";
+    if (!$("onboardingVisionApiKey").value.trim() && !cfg.has_api_key) {
+      return "视觉模型还没有 API key。可以先改成「暂不开启」，以后在设置里补。";
+    }
+  }
+  return "";
+}
+
+async function finishOnboarding() {
+  const validationError = validateOnboardingBeforeSave();
+  if (validationError) {
+    $("onboardingStatus").textContent = validationError;
+    return;
+  }
+  $("finishOnboardingBtn").disabled = true;
+  $("onboardingStatus").textContent = "正在保存配置…";
+  try {
+    await api("/api/settings", {
+      method: "POST",
+      body: JSON.stringify(buildOnboardingSettingsPayload()),
+    });
+    $("onboardingStatus").textContent = "正在保存翻译设置…";
+    await api("/api/translation-settings", {
+      method: "POST",
+      body: JSON.stringify(buildOnboardingTranslationPayload()),
+    });
+    $("onboardingStatus").textContent = "正在保存可选服务…";
+    await api("/api/easyscholar/settings", {
+      method: "POST",
+      body: JSON.stringify(buildOnboardingEasyScholarPayload()),
+    });
+    await api("/api/onboarding", {
+      method: "POST",
+      body: JSON.stringify({ completed: true }),
+    });
+    $("onboardingStatus").textContent = "已完成配置";
+    closeOnboardingModal();
+    notify.info("配置向导已完成，可以开始整理文献了");
+    await loadConfig();
+  } catch (error) {
+    $("onboardingStatus").textContent = "保存失败：" + error.message;
+  } finally {
+    $("finishOnboardingBtn").disabled = false;
+  }
+}
+
+async function skipOnboardingPermanently() {
+  $("onboardingStatus").textContent = "已跳过，之后可从「更多操作 → 配置向导」重新打开";
+  try {
+    await api("/api/onboarding", {
+      method: "POST",
+      body: JSON.stringify({ completed: true }),
+    });
+    closeOnboardingModal();
+  } catch (error) {
+    $("onboardingStatus").textContent = "跳过失败：" + error.message;
+  }
+}
+
+async function maybeOpenOnboarding() {
+  try {
+    const status = await api("/api/onboarding");
+    if (!status.completed && !status.main_ready) {
+      await openOnboardingModal({ auto: true });
+    }
+  } catch (error) {
+    console.warn("onboarding check failed", error);
+  }
+}
+
+async function detectOllamaForOnboarding() {
+  $("onboardingOllamaStatus").textContent = "正在检测…";
+  try {
+    const data = await api("/api/models/detect", {
+      method: "POST",
+      body: JSON.stringify({
+        provider: "ollama",
+        base_url: $("onboardingOllamaBaseUrl").value || "http://127.0.0.1:11434",
+      }),
+    });
+    const models = data.models || [];
+    if (models.length) {
+      const names = models.map((m) => m.id).filter(Boolean);
+      $("onboardingOllamaStatus").textContent = `检测到 ${names.length} 个模型：${names.slice(0, 4).join("、")}`;
+      if (!$("onboardingOllamaModel").value || $("onboardingOllamaModel").value === "qwen2.5:14b") {
+        $("onboardingOllamaModel").value = names[0] || $("onboardingOllamaModel").value;
+      }
+      $("onboardingTranslationMode").value = "ollama";
+      updateOnboardingTranslationUi();
+      return;
+    }
+    $("onboardingOllamaStatus").textContent = data.error || "没有检测到模型。先在终端运行 ollama pull qwen2.5:14b。";
+  } catch (error) {
+    $("onboardingOllamaStatus").textContent = "检测失败：" + error.message;
   }
 }
 
@@ -3021,6 +3522,33 @@ function bindEvents() {
   $("runExportCategoryBtn")?.addEventListener("click", () => runExportCategory().catch((e) => {
     $("exportCategoryStatus").textContent = e.message;
   }));
+  $("openOnboardingBtn")?.addEventListener("click", () => {
+    $("overflowMenu")?.classList.remove("show");
+    openOnboardingModal().catch((e) => notify.error("配置向导打开失败：" + e.message));
+  });
+  $("closeOnboardingBtn")?.addEventListener("click", closeOnboardingModal);
+  $("skipOnboardingBtn")?.addEventListener("click", () => skipOnboardingPermanently().catch((e) => {
+    $("onboardingStatus").textContent = e.message;
+  }));
+  $("onboardingProvider")?.addEventListener("change", (e) => applyOnboardingProviderPreset(e.target.value));
+  $("onboardingTranslationMode")?.addEventListener("change", updateOnboardingTranslationUi);
+  $("onboardingVisionMode")?.addEventListener("change", (e) => applyOnboardingVisionPreset(e.target.value));
+  $("detectOllamaBtn")?.addEventListener("click", () => detectOllamaForOnboarding());
+  $("onboardingBackBtn")?.addEventListener("click", () => {
+    onboardingState.step = Math.max(0, onboardingState.step - 1);
+    renderOnboardingStep();
+  });
+  $("onboardingNextBtn")?.addEventListener("click", () => {
+    onboardingState.step = Math.min(3, onboardingState.step + 1);
+    renderOnboardingStep();
+  });
+  $("finishOnboardingBtn")?.addEventListener("click", finishOnboarding);
+  document.querySelectorAll("[data-onboarding-jump]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      onboardingState.step = Number(btn.dataset.onboardingJump || 0);
+      renderOnboardingStep();
+    });
+  });
   $("helpCiteBtn").addEventListener("click", helpCiteCurrentPaper);
   $("openCitationManagerBtn")?.addEventListener("click", () => {
     openCitationManager().catch((e) => {
@@ -3169,6 +3697,7 @@ async function init() {
   await loadCitationList();
   await loadPapers();
   startHeartbeat();
+  await maybeOpenOnboarding();
 }
 
 init().catch((error) => {
