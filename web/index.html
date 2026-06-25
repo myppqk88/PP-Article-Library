@@ -25,7 +25,11 @@
         <div class="top-actions">
           <button id="organizeBtn" class="primary" title="整理 inbox 中的新 PDF">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9.5V12a1 1 0 001 1h8a1 1 0 001-1V9.5"/><path d="M8 2v8m0 0L5 7m3 3l3-3"/></svg>
-            整理新文献
+            <span id="organizeBtnLabel">整理新文献</span>
+          </button>
+          <button id="addPdfBtn" class="secondary" title="选择本地 PDF，复制到 inbox 后自动整理">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 13h10"/><path d="M8 3v7m0-7L5.5 5.5M8 3l2.5 2.5"/><path d="M4.5 10.5h7"/></svg>
+            <span id="addPdfBtnLabel">添加 PDF</span>
           </button>
 
           <span class="help-cite-wrap" id="helpCiteWrap">
@@ -55,6 +59,10 @@
               <button id="exportCategoryBtn" title="按分类导出 PDF + 笔记">
                 <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/><path d="M3 7h10"/></svg></span>
                 按分类导出
+              </button>
+              <button id="openZoteroImportBtn" title="从本机 Zotero 数据目录导入文献、PDF 和笔记">
+                <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3z"/><path d="M5 6h6M5 9h4"/><path d="M11 11l2 2m0 0l2-2m-2 2V8"/></svg></span>
+                从 Zotero 导入
               </button>
               <button id="openOnboardingBtn" title="重新打开第一次配置向导">
                 <span class="menu-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.5a5.5 5.5 0 105.5 5.5"/><path d="M8 5v3l2 1.5"/><path d="M11.5 2.5h2v2"/></svg></span>
@@ -873,6 +881,48 @@
           <button id="skipOnboardingBtn" class="secondary" type="button">跳过并不再自动弹出</button>
           <button id="onboardingNextBtn" type="button">下一步</button>
           <button id="finishOnboardingBtn" class="primary hidden" type="button">保存并完成</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="zoteroImportModal" class="modal hidden">
+      <div class="modal-card zotero-import-card">
+        <div class="modal-head">
+          <div>
+            <h2>从 Zotero 导入</h2>
+            <p class="muted">只读取 Zotero 数据，不会修改你的 Zotero。请选择包含 <code>zotero.sqlite</code> 的数据目录。</p>
+          </div>
+          <button id="closeZoteroImportBtn" class="secondary" type="button">关闭</button>
+        </div>
+
+        <section class="zotero-import-body">
+          <div class="zotero-path-row">
+            <label>你的 Zotero 数据目录
+              <input id="zoteroPathInput" placeholder="例如 /Users/你/Zotero 或 C:\Users\你\Zotero" />
+            </label>
+            <button id="chooseZoteroDirBtn" type="button" class="secondary">选择文件夹</button>
+            <button id="previewZoteroBtn" type="button">预览</button>
+          </div>
+          <p class="zotero-help muted">
+            不确定在哪里：打开 Zotero → 设置 → 高级 → 文件和文件夹 → 显示数据目录。不要选择 <code>storage</code> 子文件夹。
+          </p>
+
+          <div id="zoteroCandidateList" class="zotero-candidates"></div>
+
+          <div class="zotero-options">
+            <label class="checkline"><input id="zoteroCopyPdfs" type="checkbox" checked /> 复制 Zotero PDF 到本系统的 library/pdfs</label>
+            <label class="checkline"><input id="zoteroImportNotes" type="checkbox" checked /> 导入 Zotero 普通笔记到 Markdown 笔记</label>
+            <label class="checkline"><input id="zoteroImportAnnotations" type="checkbox" checked /> 导入 Zotero PDF 批注文字</label>
+            <label class="checkline"><input id="zoteroCollectionsToCategories" type="checkbox" checked /> 把 Zotero Collections 带入「最终分类」</label>
+          </div>
+
+          <div id="zoteroPreviewSummary" class="zotero-preview-summary"></div>
+          <div id="zoteroSampleList" class="zotero-samples"></div>
+        </section>
+
+        <div class="panel-actions zotero-import-actions">
+          <span id="zoteroImportStatus" class="muted">正在检测默认 Zotero 位置…</span>
+          <button id="runZoteroImportBtn" type="button" class="primary" disabled>确认导入</button>
         </div>
       </div>
     </div>

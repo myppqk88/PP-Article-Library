@@ -6,6 +6,7 @@ import json
 import mimetypes
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -57,6 +58,7 @@ import citations as citations_module
 import easyscholar as easyscholar_module
 import excerpts as excerpts_module
 import export_by_category as export_module
+import zotero_import as zotero_module
 import yaml
 
 
@@ -1329,6 +1331,225 @@ def save_onboarding_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return onboarding
 
 
+def zotero_payload() -> dict[str, Any]:
+    settings = load_settings()
+    zotero_cfg = settings.get("zotero", {}) or {}
+    data_dir = str(zotero_cfg.get("data_dir", "") or "")
+    candidates = zotero_module.default_zotero_candidates(data_dir)
+    selected = next((item for item in candidates if item.get("valid")), None)
+    if data_dir and not selected:
+        selected = zotero_module.validate_zotero_dir(data_dir)
+        selected["label"] = "已保存的位置"
+    return {
+        "ok": True,
+        "data_dir": data_dir,
+        "candidates": candidates,
+        "selected": selected,
+        "platform": sys.platform,
+    }
+
+
+def save_zotero_data_dir(path: str) -> None:
+    if not path:
+        return
+    settings = load_settings()
+    zotero_cfg = settings.setdefault("zotero", {})
+    zotero_cfg["data_dir"] = str(zotero_module.normalize_zotero_dir(path))
+    save_settings_yaml(settings)
+
+
+def choose_zotero_dir(initial: str = "") -> str:
+    initial_path = str(zotero_module.normalize_zotero_dir(initial)) if initial else str(Path.home())
+    if not Path(initial_path).exists():
+        initial_path = str(Path.home())
+    if sys.platform == "darwin":
+        script = (
+            'POSIX path of (choose folder with prompt '
+            '"请选择 Zotero 数据目录（里面应包含 zotero.sqlite 和 storage 文件夹）" '
+            f'default location POSIX file "{initial_path}")'
+        )
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode != 0:
+            raise RuntimeError((result.stderr or "用户取消选择").strip())
+        return (result.stdout or "").strip()
+    if sys.platform == "win32":
+        ps = rf"""
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = "请选择 Zotero 数据目录（里面应包含 zotero.sqlite 和 storage 文件夹）"
+$dialog.SelectedPath = "{initial_path.replace('"', '""')}"
+$dialog.ShowNewFolderButton = $false
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
+  [Console]::Out.Write($dialog.SelectedPath)
+}}
+"""
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-STA", "-Command", ps],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            **subprocess_hidden_kwargs(),
+        )
+        if result.returncode != 0:
+            raise RuntimeError((result.stderr or "用户取消选择").strip())
+        return (result.stdout or "").strip()
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        selected = filedialog.askdirectory(
+            initialdir=initial_path,
+            title="请选择 Zotero 数据目录（里面应包含 zotero.sqlite 和 storage 文件夹）",
+        )
+        root.destroy()
+        return str(selected or "")
+    except Exception as exc:
+        raise RuntimeError(f"系统选择窗口打不开：{exc}") from exc
+
+
+def _applescript_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _powershell_quote(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def choose_pdf_files(initial: str = "") -> list[str]:
+    initial_path = str(Path(initial).expanduser()) if initial else str(Path.home())
+    if not Path(initial_path).exists():
+        initial_path = str(Path.home())
+    if sys.platform == "darwin":
+        script = f'''
+set selectedFiles to choose file with prompt "请选择要整理的 PDF，可以多选" of type {{"com.adobe.pdf", "pdf"}} default location POSIX file "{_applescript_escape(initial_path)}" with multiple selections allowed
+set outputText to ""
+repeat with selectedFile in selectedFiles
+  set outputText to outputText & POSIX path of selectedFile & linefeed
+end repeat
+return outputText
+'''
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if result.returncode != 0:
+            stderr = (result.stderr or "").strip()
+            if "User canceled" in stderr or "-128" in stderr:
+                return []
+            raise RuntimeError(stderr or "用户取消选择")
+        return [line.strip() for line in (result.stdout or "").splitlines() if line.strip()]
+    if sys.platform == "win32":
+        ps = rf"""
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Title = "请选择要整理的 PDF，可以多选"
+$dialog.Filter = "PDF files (*.pdf)|*.pdf"
+$dialog.Multiselect = $true
+$dialog.InitialDirectory = {_powershell_quote(initial_path)}
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {{
+  [Console]::Out.Write(($dialog.FileNames -join "`n"))
+}}
+"""
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-STA", "-Command", ps],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            **subprocess_hidden_kwargs(),
+        )
+        if result.returncode != 0:
+            raise RuntimeError((result.stderr or "用户取消选择").strip())
+        return [line.strip() for line in (result.stdout or "").splitlines() if line.strip()]
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        selected = filedialog.askopenfilenames(
+            initialdir=initial_path,
+            title="请选择要整理的 PDF，可以多选",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+        )
+        root.destroy()
+        return [str(path) for path in selected]
+    except Exception as exc:
+        raise RuntimeError(f"系统选择窗口打不开：{exc}") from exc
+
+
+def safe_inbox_pdf_name(filename: str) -> str:
+    name = Path(filename or "paper.pdf").name
+    stem = Path(name).stem.strip() or "paper"
+    stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", stem).strip(" ._") or "paper"
+    suffix = Path(name).suffix.lower()
+    if suffix != ".pdf":
+        suffix = ".pdf"
+    return f"{stem[:140]}{suffix}"
+
+
+def unique_inbox_path(inbox: Path, filename: str) -> Path:
+    filename = safe_inbox_pdf_name(filename)
+    stem = Path(filename).stem
+    suffix = Path(filename).suffix or ".pdf"
+    target = inbox / filename
+    index = 2
+    while target.exists():
+        target = inbox / f"{stem}-{index}{suffix}"
+        index += 1
+    return target
+
+
+def copy_selected_pdfs_to_inbox(paths: list[str]) -> dict[str, Any]:
+    settings = load_settings()
+    inbox = project_path(settings["paths"]["inbox"]).resolve()
+    inbox.mkdir(parents=True, exist_ok=True)
+    copied: list[dict[str, str]] = []
+    skipped: list[dict[str, str]] = []
+    already_in_inbox: list[dict[str, str]] = []
+    for raw in paths:
+        source = Path(raw).expanduser()
+        try:
+            resolved_source = source.resolve()
+        except OSError as exc:
+            skipped.append({"path": str(source), "reason": str(exc)})
+            continue
+        if not resolved_source.exists() or not resolved_source.is_file():
+            skipped.append({"path": str(source), "reason": "文件不存在"})
+            continue
+        if resolved_source.suffix.lower() != ".pdf":
+            skipped.append({"path": str(source), "reason": "不是 PDF"})
+            continue
+        try:
+            resolved_source.relative_to(inbox)
+            already_in_inbox.append({"path": rel(resolved_source), "name": resolved_source.name})
+            continue
+        except ValueError:
+            pass
+        target = unique_inbox_path(inbox, resolved_source.name)
+        try:
+            shutil.copy2(resolved_source, target)
+        except OSError as exc:
+            skipped.append({"path": str(resolved_source), "reason": str(exc)})
+            continue
+        copied.append({"source": str(resolved_source), "target": rel(target), "name": target.name})
+    return {
+        "copied": copied,
+        "already_in_inbox": already_in_inbox,
+        "skipped": skipped,
+    }
+
+
 def _quick_ollama_status(base_url: str) -> dict[str, Any]:
     """Short Ollama probe for first-run UI; never block app load for long."""
     import requests
@@ -2030,6 +2251,8 @@ class LiteratureHandler(BaseHTTPRequestHandler):
                 return self.send_json(settings_payload())
             if path == "/api/onboarding":
                 return self.send_json(onboarding_payload())
+            if path == "/api/zotero/detect":
+                return self.api_zotero_detect()
             if path == "/api/prompts":
                 return self.api_prompts()
             if path == "/api/tracking-journals":
@@ -2107,6 +2330,14 @@ class LiteratureHandler(BaseHTTPRequestHandler):
                 return self.api_save_settings()
             if parsed.path == "/api/onboarding":
                 return self.api_save_onboarding()
+            if parsed.path == "/api/zotero/select-dir":
+                return self.api_zotero_select_dir()
+            if parsed.path == "/api/zotero/preview":
+                return self.api_zotero_preview()
+            if parsed.path == "/api/zotero/import":
+                return self.api_zotero_import()
+            if parsed.path == "/api/inbox/select-pdfs":
+                return self.api_inbox_select_pdfs()
             if parsed.path == "/api/prompts":
                 return self.api_save_prompts()
             if parsed.path == "/api/tracking-journals":
@@ -2721,6 +2952,56 @@ class LiteratureHandler(BaseHTTPRequestHandler):
         data = read_body(self)
         save_onboarding_payload(data)
         return self.send_json(onboarding_payload())
+
+    def api_zotero_detect(self) -> None:
+        return self.send_json(zotero_payload())
+
+    def api_zotero_select_dir(self) -> None:
+        data = read_body(self)
+        initial = str(data.get("path", "") or "").strip()
+        try:
+            selected = choose_zotero_dir(initial)
+        except Exception as exc:
+            return self.send_error_json(str(exc))
+        if not selected:
+            return self.send_json({"ok": True, "cancelled": True})
+        info = zotero_module.validate_zotero_dir(selected)
+        if info.get("valid"):
+            save_zotero_data_dir(str(info["path"]))
+        return self.send_json({"ok": True, "cancelled": False, "selection": info})
+
+    def api_zotero_preview(self) -> None:
+        data = read_body(self)
+        path = str(data.get("path", "") or "").strip()
+        if not path:
+            return self.send_error_json("请先选择 Zotero 数据目录。")
+        try:
+            preview = zotero_module.preview_zotero_library(path, load_rows())
+        except Exception as exc:
+            traceback.print_exc()
+            return self.send_error_json(f"读取 Zotero 失败：{exc}")
+        save_zotero_data_dir(path)
+        return self.send_json(preview)
+
+    def api_zotero_import(self) -> None:
+        data = read_body(self)
+        path = str(data.get("path", "") or "").strip()
+        if not path:
+            return self.send_error_json("请先选择 Zotero 数据目录。")
+        options = data.get("options", {}) or {}
+        if not isinstance(options, dict):
+            options = {}
+        settings = load_settings()
+        try:
+            with _ROWS_LOCK:
+                rows = load_rows()
+                result = zotero_module.import_zotero_library(path, rows, settings, options=options)
+                save_rows(result.pop("rows"))
+        except Exception as exc:
+            traceback.print_exc()
+            return self.send_error_json(f"导入 Zotero 失败：{exc}")
+        save_zotero_data_dir(path)
+        return self.send_json(result)
 
     def api_prompts(self) -> None:
         note_path = ROOT / "prompts" / "note_prompt.md"
@@ -3782,6 +4063,27 @@ class LiteratureHandler(BaseHTTPRequestHandler):
         thread = threading.Thread(target=run_organize_job, args=(job_id,), daemon=True)
         thread.start()
         return self.send_json({"ok": True, "job_id": job_id, "job": organize_job_snapshot(job_id)})
+
+    def api_inbox_select_pdfs(self) -> None:
+        data = read_body(self)
+        initial = str(data.get("initial_dir", "") or "")
+        selected = choose_pdf_files(initial)
+        if not selected:
+            return self.send_json({"ok": True, "cancelled": True, "copied": 0, "already_in_inbox": 0, "skipped": 0, "files": []})
+        result = copy_selected_pdfs_to_inbox(selected)
+        copied = result["copied"]
+        already_in_inbox = result["already_in_inbox"]
+        skipped = result["skipped"]
+        return self.send_json({
+            "ok": True,
+            "cancelled": False,
+            "copied": len(copied),
+            "already_in_inbox": len(already_in_inbox),
+            "skipped": len(skipped),
+            "files": copied,
+            "existing": already_in_inbox,
+            "skipped_files": skipped,
+        })
 
     def api_organize_status(self, query: dict[str, list[str]]) -> None:
         job_id = query.get("job_id", [""])[0]

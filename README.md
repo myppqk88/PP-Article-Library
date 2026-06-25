@@ -143,6 +143,18 @@ xattr -dr com.apple.quarantine
 
 你在网页「设置」里填写的 key 会写入项目根目录的 `.env` 文件。这个文件已被 `.gitignore` 排除，不会上传到 GitHub。
 
+### 从 Zotero 导入
+
+如果你已经用 Zotero 管理文献，不需要再手动重复整理。打开工作台后点顶部「更多操作 → 从 Zotero 导入」，程序会自动检测常见 Zotero 数据目录，也可以手动选择文件夹。
+
+请选择包含 `zotero.sqlite` 的 Zotero 数据目录，不要选 `storage` 子文件夹。导入前会先预览可新增文献、重复文献、PDF、笔记和批注数量；确认后才会复制 PDF 到 `library/pdfs`，并把 Zotero 普通笔记 / PDF 批注整理成 Markdown 笔记。
+
+这个功能只读 Zotero，不会修改你的 Zotero 数据库，也不需要 MCP。Zotero 开着也可以导入，程序会读取一个临时快照。
+
+### 添加本地 PDF
+
+打开工作台后点顶部「添加 PDF」，可以一次选择一个或多个本地 PDF。程序会先把它们复制到 `inbox/`，然后自动按原来的「整理新文献」流程生成索引和笔记。
+
 ### 数据在哪里
 
 ```text
@@ -217,6 +229,16 @@ python3 scripts/server.py
 ```
 
 Then open `http://127.0.0.1:8765`.
+
+### Import From Zotero
+
+If you already manage papers in Zotero, open the workbench and choose `More → Import from Zotero`. Select the Zotero data directory that contains `zotero.sqlite`, not the `storage` subfolder.
+
+The importer previews new items, duplicates, PDFs, notes, and annotations before it copies anything. On confirmation, it copies PDF files into `library/pdfs` and converts Zotero notes / PDF annotations into Markdown notes. It reads a temporary snapshot, so Zotero can stay open. It is read-only for Zotero and does not require MCP.
+
+### Add Local PDFs
+
+In the workbench, click `Add PDF` to choose one or more local PDF files. The app copies them into `inbox/` and then runs the normal organization flow.
 
 ### Privacy And Local Data
 

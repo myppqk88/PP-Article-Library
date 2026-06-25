@@ -25,6 +25,7 @@ const state = {
   citations: [],
   activeCitation: "",
   activeTranslationProvider: "ollama",
+  zotero: { path: "", preview: null },
   chatHistory: [],
   workContext: "",
   uiTabs: { note: true, annot: true, ai: true, excerpt: true, meta: true },
@@ -1491,6 +1492,223 @@ async function runExportCategory() {
   } catch (e) {
     $("exportCategoryStatus").textContent = `失败：${e.message}`;
   } finally {
+    btn.disabled = false;
+  }
+}
+
+function setZoteroStatus(message, isError = false) {
+  const el = $("zoteroImportStatus");
+  if (!el) return;
+  el.textContent = message || "";
+  el.style.color = isError ? "#9b3025" : "";
+}
+
+function setZoteroPath(path) {
+  state.zotero.path = path || "";
+  if ($("zoteroPathInput")) $("zoteroPathInput").value = state.zotero.path;
+  state.zotero.preview = null;
+  if ($("runZoteroImportBtn")) $("runZoteroImportBtn").disabled = true;
+  renderZoteroPreview(null);
+}
+
+function renderZoteroCandidates(candidates = []) {
+  const host = $("zoteroCandidateList");
+  if (!host) return;
+  host.innerHTML = "";
+  const visible = candidates.filter((item) => item.exists || item.valid).slice(0, 4);
+  if (!visible.length) {
+    host.innerHTML = `
+      <div class="zotero-candidate">
+        <div>
+          <strong>没有自动找到 Zotero 数据目录</strong>
+          <span>可以点「选择文件夹」，或把 Zotero 的数据目录路径粘贴到上方。</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  for (const item of visible) {
+    const row = document.createElement("div");
+    row.className = "zotero-candidate";
+    const ok = item.valid ? "可用" : "缺少 zotero.sqlite";
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(item.label || "候选位置")} · ${ok}</strong>
+        <span>${escapeHtml(item.path || "")}</span>
+      </div>
+      <button type="button" class="secondary">使用</button>
+    `;
+    row.querySelector("button").disabled = !item.valid;
+    row.querySelector("button").addEventListener("click", () => setZoteroPath(item.path || ""));
+    host.appendChild(row);
+  }
+}
+
+function renderZoteroPreview(data) {
+  const summary = $("zoteroPreviewSummary");
+  const samples = $("zoteroSampleList");
+  if (!summary || !samples) return;
+  summary.innerHTML = "";
+  samples.innerHTML = "";
+  if (!data) return;
+  const stats = [
+    ["总文献", data.total_items || 0],
+    ["可新增", data.new_items || 0],
+    ["重复", data.duplicates || 0],
+    ["有 PDF", data.with_pdf || 0],
+    ["有笔记", data.with_notes || 0],
+    ["有批注", data.with_annotations || 0],
+    ["有集合", data.with_collections || 0],
+    ["有标签", data.with_tags || 0],
+  ];
+  summary.innerHTML = stats.map(([label, value]) => `
+    <div class="zotero-stat"><strong>${value}</strong><span>${escapeHtml(label)}</span></div>
+  `).join("");
+  const sampleRows = data.samples || [];
+  if (!sampleRows.length) {
+    samples.innerHTML = `<div class="zotero-sample"><span class="muted">没有可预览的条目。</span></div>`;
+    return;
+  }
+  samples.innerHTML = sampleRows.map((item) => {
+    const title = item.title || "Untitled";
+    const meta = [item.year, item.authors].filter(Boolean).join(" · ");
+    const groups = item.collections || item.tags || "";
+    const pill = item.duplicate
+      ? `<span class="zotero-pill dup" title="${escapeHtml(item.duplicate_reason || "重复")}">重复</span>`
+      : `<span class="zotero-pill">${item.has_pdf ? "PDF" : "无 PDF"}</span>`;
+    return `
+      <div class="zotero-sample">
+        <strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong>
+        <span title="${escapeHtml(meta)}">${escapeHtml(meta || "—")}</span>
+        <small title="${escapeHtml(groups)}">${escapeHtml(groups || "无集合/标签")}</small>
+        ${pill}
+      </div>
+    `;
+  }).join("");
+}
+
+async function openZoteroImportModal() {
+  $("zoteroImportModal").classList.remove("hidden");
+  setZoteroStatus("正在检测默认 Zotero 位置…");
+  renderZoteroCandidates([]);
+  renderZoteroPreview(null);
+  $("runZoteroImportBtn").disabled = true;
+  try {
+    const data = await api("/api/zotero/detect");
+    renderZoteroCandidates(data.candidates || []);
+    const selected = data.selected || null;
+    const path = (selected && selected.valid ? selected.path : data.data_dir) || "";
+    if (path) {
+      state.zotero.path = path;
+      $("zoteroPathInput").value = path;
+      setZoteroStatus(selected?.valid ? "已找到 Zotero 数据目录，可以先预览。" : "请检查这个路径是否包含 zotero.sqlite。", !selected?.valid);
+    } else {
+      setZoteroStatus("没有自动找到。请点「选择文件夹」或手动粘贴路径。");
+    }
+  } catch (e) {
+    setZoteroStatus("检测失败：" + e.message, true);
+  }
+}
+
+function closeZoteroImportModal() {
+  $("zoteroImportModal").classList.add("hidden");
+}
+
+async function chooseZoteroDir() {
+  const btn = $("chooseZoteroDirBtn");
+  btn.disabled = true;
+  setZoteroStatus("正在打开系统文件夹选择窗口…");
+  try {
+    const data = await api("/api/zotero/select-dir", {
+      method: "POST",
+      body: JSON.stringify({ path: $("zoteroPathInput").value.trim() }),
+    });
+    if (data.cancelled) {
+      setZoteroStatus("已取消选择。");
+      return;
+    }
+    const selection = data.selection || {};
+    setZoteroPath(selection.path || "");
+    if (selection.valid) {
+      setZoteroStatus("已选择 Zotero 数据目录，可以预览。");
+    } else {
+      setZoteroStatus("这个文件夹里没有 zotero.sqlite。请不要选 storage 子文件夹。", true);
+    }
+  } catch (e) {
+    setZoteroStatus("选择失败：" + e.message + "。可以手动粘贴路径。", true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function previewZoteroImport() {
+  const path = $("zoteroPathInput").value.trim();
+  if (!path) {
+    setZoteroStatus("请先选择或粘贴 Zotero 数据目录。", true);
+    return;
+  }
+  state.zotero.path = path;
+  const btn = $("previewZoteroBtn");
+  btn.disabled = true;
+  $("runZoteroImportBtn").disabled = true;
+  setZoteroStatus("正在读取 Zotero 数据库…");
+  try {
+    const data = await api("/api/zotero/preview", {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    });
+    state.zotero.preview = data;
+    renderZoteroPreview(data);
+    $("runZoteroImportBtn").disabled = !(data.new_items > 0);
+    setZoteroStatus(data.new_items > 0
+      ? `预览完成：可新增 ${data.new_items} 篇。确认后才会复制 PDF 和生成笔记。`
+      : "预览完成：没有发现新的可导入文献。");
+  } catch (e) {
+    renderZoteroPreview(null);
+    setZoteroStatus("预览失败：" + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function zoteroImportOptions() {
+  return {
+    copy_pdfs: $("zoteroCopyPdfs")?.checked !== false,
+    import_notes: $("zoteroImportNotes")?.checked !== false,
+    import_annotations: $("zoteroImportAnnotations")?.checked !== false,
+    collections_to_categories: $("zoteroCollectionsToCategories")?.checked !== false,
+    tags_to_keywords: true,
+  };
+}
+
+async function runZoteroImport() {
+  const path = $("zoteroPathInput").value.trim();
+  if (!path) {
+    setZoteroStatus("请先选择或粘贴 Zotero 数据目录。", true);
+    return;
+  }
+  const btn = $("runZoteroImportBtn");
+  btn.disabled = true;
+  setZoteroStatus("正在导入…文献多时可能需要一点时间。");
+  try {
+    const data = await api("/api/zotero/import", {
+      method: "POST",
+      body: JSON.stringify({ path, options: zoteroImportOptions() }),
+    });
+    setZoteroStatus(
+      `导入完成：新增 ${data.imported} 篇，跳过重复 ${data.skipped} 篇，复制 PDF ${data.pdf_copied} 个，生成笔记 ${data.notes_created} 份。`
+    );
+    if ((data.warnings || []).length) {
+      notify.errorPersist("Zotero 导入有部分 PDF 未复制：\n" + data.warnings.slice(0, 5).join("\n"));
+    } else {
+      notify.info(`Zotero 导入完成：新增 ${data.imported} 篇`);
+    }
+    await loadConfig();
+    await loadCategories();
+    await loadPapers();
+    await previewZoteroImport();
+  } catch (e) {
+    setZoteroStatus("导入失败：" + e.message, true);
     btn.disabled = false;
   }
 }
@@ -3330,9 +3548,26 @@ async function helpCiteCurrentPaper() {
   }
 }
 
-async function organizeInbox() {
-  $("organizeBtn").disabled = true;
-  $("organizeBtn").textContent = "整理中";
+function setOrganizeControlsBusy(busy, label = "整理中") {
+  const organizeBtn = $("organizeBtn");
+  const organizeLabel = $("organizeBtnLabel");
+  const addPdfBtn = $("addPdfBtn");
+  const addPdfLabel = $("addPdfBtnLabel");
+  if (organizeBtn) organizeBtn.disabled = busy;
+  if (organizeLabel) organizeLabel.textContent = busy ? label : "整理新文献";
+  if (addPdfBtn) addPdfBtn.disabled = busy;
+  if (addPdfLabel && !busy) addPdfLabel.textContent = "添加 PDF";
+}
+
+function setAddPdfButtonBusy(busy, label = "选择中") {
+  const addPdfBtn = $("addPdfBtn");
+  const addPdfLabel = $("addPdfBtnLabel");
+  if (addPdfBtn) addPdfBtn.disabled = busy;
+  if (addPdfLabel) addPdfLabel.textContent = busy ? label : "添加 PDF";
+}
+
+async function organizeInbox(label = "整理中") {
+  setOrganizeControlsBusy(true, label);
   try {
     const data = await api("/api/organize", { method: "POST", body: "{}" });
     state.organizeJobId = data.job_id;
@@ -3340,8 +3575,35 @@ async function organizeInbox() {
     pollOrganizeProgress(data.job_id);
   } catch (error) {
     alert(error.message);
-    $("organizeBtn").disabled = false;
-    $("organizeBtn").textContent = "整理新文献";
+    setOrganizeControlsBusy(false);
+  }
+}
+
+async function addLocalPdfsAndOrganize() {
+  setAddPdfButtonBusy(true, "选择中");
+  try {
+    const data = await api("/api/inbox/select-pdfs", { method: "POST", body: "{}" });
+    if (data.cancelled) {
+      notify.info("已取消选择 PDF");
+      return;
+    }
+    const copied = Number(data.copied || 0);
+    const alreadyInInbox = Number(data.already_in_inbox || 0);
+    const skipped = Number(data.skipped || 0);
+    if (copied + alreadyInInbox <= 0) {
+      const suffix = skipped ? `（跳过 ${skipped} 个非 PDF 或无效文件）` : "";
+      notify.error(`没有添加新的 PDF${suffix}`);
+      return;
+    }
+    const message = alreadyInInbox
+      ? `已加入 ${copied} 个 PDF，另有 ${alreadyInInbox} 个本来就在 inbox，开始整理`
+      : `已加入 ${copied} 个 PDF 到 inbox，开始整理`;
+    notify.info(message);
+    await organizeInbox("整理中");
+  } catch (error) {
+    notify.error("添加 PDF 失败：" + error.message);
+  } finally {
+    if (!state.organizePollTimer) setAddPdfButtonBusy(false);
   }
 }
 
@@ -3368,8 +3630,7 @@ function pollOrganizeProgress(jobId) {
       if (job.status === "done" || job.status === "error") {
         clearInterval(state.organizePollTimer);
         state.organizePollTimer = null;
-        $("organizeBtn").disabled = false;
-        $("organizeBtn").textContent = "整理新文献";
+        setOrganizeControlsBusy(false);
         if (job.status === "done") {
           await loadConfig();
           await loadCategoryTree();
@@ -3383,8 +3644,7 @@ function pollOrganizeProgress(jobId) {
       state.organizePollTimer = null;
       $("organizeProgressMessage").textContent = error.message;
       $("organizeProgress").classList.add("error");
-      $("organizeBtn").disabled = false;
-      $("organizeBtn").textContent = "整理新文献";
+      setOrganizeControlsBusy(false);
     }
   }, 1000);
 }
@@ -3406,7 +3666,15 @@ async function refreshScanStatus() {
 }
 
 function bindEvents() {
-  $("searchInput").addEventListener("input", debounce(loadPapers));
+  const runSearch = () => loadPapers().catch((e) => notify.error("搜索失败：" + e.message));
+  const debouncedSearch = debounce(runSearch);
+  $("searchInput").addEventListener("input", debouncedSearch);
+  // macOS / Safari-style search clear buttons may emit `search` without a
+  // normal input event; Enter should also force a refresh immediately.
+  $("searchInput").addEventListener("search", runSearch);
+  $("searchInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runSearch();
+  });
   $("categorySelect").addEventListener("change", loadPapers);
   $("readStatusFilter").addEventListener("change", loadPapers);
   $("importanceFilter").addEventListener("change", loadPapers);
@@ -3513,7 +3781,8 @@ function bindEvents() {
   if (sidebarToggle) {
     sidebarToggle.addEventListener("click", () => setSidebarCollapsed(!state.sidebarCollapsed));
   }
-  $("organizeBtn").addEventListener("click", organizeInbox);
+  $("organizeBtn").addEventListener("click", () => organizeInbox());
+  $("addPdfBtn")?.addEventListener("click", addLocalPdfsAndOrganize);
   $("helpReadBtn").addEventListener("click", helpReadCurrentPaper);
   $("refreshRankBtn")?.addEventListener("click", refreshRankCurrentPaper);
   $("refreshRankAllBtn")?.addEventListener("click", refreshRankAll);
@@ -3522,6 +3791,23 @@ function bindEvents() {
   $("runExportCategoryBtn")?.addEventListener("click", () => runExportCategory().catch((e) => {
     $("exportCategoryStatus").textContent = e.message;
   }));
+  $("openZoteroImportBtn")?.addEventListener("click", () => {
+    $("overflowMenu")?.classList.remove("show");
+    openZoteroImportModal().catch((e) => notify.error("Zotero 导入打开失败：" + e.message));
+  });
+  $("closeZoteroImportBtn")?.addEventListener("click", closeZoteroImportModal);
+  $("zoteroImportModal")?.addEventListener("click", (e) => {
+    if (e.target === $("zoteroImportModal")) closeZoteroImportModal();
+  });
+  $("chooseZoteroDirBtn")?.addEventListener("click", () => chooseZoteroDir());
+  $("previewZoteroBtn")?.addEventListener("click", () => previewZoteroImport());
+  $("runZoteroImportBtn")?.addEventListener("click", () => runZoteroImport());
+  $("zoteroPathInput")?.addEventListener("input", () => {
+    state.zotero.path = $("zoteroPathInput").value.trim();
+    state.zotero.preview = null;
+    $("runZoteroImportBtn").disabled = true;
+    renderZoteroPreview(null);
+  });
   $("openOnboardingBtn")?.addEventListener("click", () => {
     $("overflowMenu")?.classList.remove("show");
     openOnboardingModal().catch((e) => notify.error("配置向导打开失败：" + e.message));

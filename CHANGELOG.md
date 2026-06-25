@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a local Zotero importer with default-path detection, system folder picker, preview counts, and confirmation before copying files.
+- Zotero import now reads metadata, PDF attachments, child notes, PDF annotation text, collections, and tags without modifying the Zotero database.
+- Zotero import now reads from a temporary SQLite snapshot so users do not need to close Zotero before previewing.
+- Added Zotero tracking fields to the paper index: `ZoteroKey`, `Zotero库`, `Zotero集合`, `Zotero标签`, and `Zotero版本`.
+- Added a top-bar "添加 PDF" action that lets users pick local PDFs, copies them into `inbox/`, and starts the normal organize flow.
+
 ## v0.2.4 - 2026-06-04
 
 - Added a first-run configuration wizard for main AI provider, translation, EasyScholar, vision model, and OCR.

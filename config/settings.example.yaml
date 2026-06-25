@@ -19,6 +19,14 @@ paths:
   text_dir: library/text
   collections_dir: collections/by_category
 
+# === Zotero 导入 ===
+# 留空时程序会自动检测常见位置：
+# macOS: /Users/<你>/Zotero
+# Windows: C:\Users\<你>\Zotero
+# 也可以在网页「更多操作 → 从 Zotero 导入」里选择或粘贴数据目录。
+zotero:
+  data_dir: ''
+
 # === AI Provider ===
 # 把要用的 provider 在下面 provider_settings 里填好 base_url / model / api_key_env，
 # 然后这里改 provider 字段切换。

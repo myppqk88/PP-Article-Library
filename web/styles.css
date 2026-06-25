@@ -1479,6 +1479,11 @@ label > input, label > select, label > textarea {
   height: min(88vh, 760px);
   overflow: hidden;
 }
+.modal-card.zotero-import-card {
+  max-width: 980px;
+  width: min(96vw, 980px);
+  max-height: 88vh;
+}
 
 .modal-head {
   display: flex; justify-content: space-between;
@@ -1617,6 +1622,139 @@ label > input, label > select, label > textarea {
   .onboarding-summary { grid-template-columns: 1fr; }
   .onboarding-actions { flex-wrap: wrap; }
   .onboarding-actions #onboardingStatus { order: 5; width: 100%; flex-basis: 100%; }
+}
+
+/* Zotero import */
+.zotero-import-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 380px;
+}
+.zotero-path-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+}
+.zotero-help {
+  margin: -4px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.zotero-candidates {
+  display: grid;
+  gap: 8px;
+}
+.zotero-candidate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line-soft);
+  background: var(--panel-soft);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+}
+.zotero-candidate strong {
+  display: block;
+  font-size: 12.5px;
+  margin-bottom: 3px;
+}
+.zotero-candidate span {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+.zotero-candidate button {
+  white-space: nowrap;
+}
+.zotero-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+.zotero-preview-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.zotero-stat {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+.zotero-stat strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--text-strong);
+}
+.zotero-stat span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.zotero-samples {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  overflow: auto;
+  max-height: 230px;
+  background: var(--panel);
+}
+.zotero-sample {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.8fr) minmax(0, 0.9fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px;
+}
+.zotero-sample:last-child { border-bottom: none; }
+.zotero-sample strong,
+.zotero-sample span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zotero-sample small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.zotero-pill {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+.zotero-pill.dup {
+  background: #f1ece5;
+  color: var(--muted);
+}
+.zotero-import-actions {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+@media (max-width: 760px) {
+  .zotero-path-row,
+  .zotero-options,
+  .zotero-preview-summary,
+  .zotero-sample {
+    grid-template-columns: 1fr;
+  }
+  .zotero-path-row button { width: 100%; }
 }
 
 /* Settings modal: tabs (Phase 5 will move to side-nav) */
