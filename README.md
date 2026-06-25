@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/myppqk88/PP-Article-Library/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.2.4-4f8f82"></a>
+  <a href="https://github.com/myppqk88/PP-Article-Library/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.2.5-4f8f82"></a>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-28343d">
   <img alt="License" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-d96f51">
   <img alt="Local first" src="https://img.shields.io/badge/data-local--first-d6a24d">
@@ -82,8 +82,8 @@ PP Article Library 是一个给个人研究使用的本地文献系统。你把 
 
 打开 [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases)，下载对应系统：
 
-- macOS: `PP-Article-Library-v0.2.4-macOS.zip`
-- Windows: `PP-Article-Library-v0.2.4-Windows.zip`
+- macOS: `PP-Article-Library-v0.2.5-macOS.zip`
+- Windows: `PP-Article-Library-v0.2.5-Windows.zip`
 
 当前版本仍需要你电脑上已有 Python 3.10+。Windows 安装 Python 时请勾选 `Add Python to PATH`。
 
@@ -94,7 +94,7 @@ PP Article Library 是一个给个人研究使用的本地文献系统。你把 
 如果你把文件解压在“下载”目录，复制这一整句到“终端 / Terminal”回车：
 
 ```bash
-xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.4-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.4-macOS/PP Article Library.app"
+xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.5-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.5-macOS/PP Article Library.app"
 ```
 
 如果你放在别的位置：
@@ -106,7 +106,7 @@ xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.4-macOS"
 xattr -dr com.apple.quarantine
 ```
 
-3. 把整个 `PP-Article-Library-v0.2.4-macOS` 文件夹拖进终端窗口。
+3. 把整个 `PP-Article-Library-v0.2.5-macOS` 文件夹拖进终端窗口。
 4. 按回车。
 5. 再双击 `PP Article Library.app`。
 
@@ -114,7 +114,7 @@ xattr -dr com.apple.quarantine
 
 ### Windows 第一次打开
 
-1. 解压 `PP-Article-Library-v0.2.4-Windows.zip`。
+1. 解压 `PP-Article-Library-v0.2.5-Windows.zip`。
 2. 双击 `Start PP Article Library.bat`。
 3. 首次运行会检测 Python 并安装必需依赖。
 4. 浏览器会自动打开本地工作台。
@@ -196,8 +196,8 @@ PP Article Library is a local-first research workbench for personal literature m
 
 Download the latest package from [GitHub Releases](https://github.com/myppqk88/PP-Article-Library/releases):
 
-- macOS: `PP-Article-Library-v0.2.4-macOS.zip`
-- Windows: `PP-Article-Library-v0.2.4-Windows.zip`
+- macOS: `PP-Article-Library-v0.2.5-macOS.zip`
+- Windows: `PP-Article-Library-v0.2.5-Windows.zip`
 
 Python 3.10+ is still required. On Windows, install Python with `Add Python to PATH` enabled.
 
@@ -206,16 +206,16 @@ Python 3.10+ is still required. On Windows, install Python with `Add Python to P
 This app is not Apple Developer notarized. On first launch, macOS may block the downloaded app. If the folder is in Downloads, paste this into Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.4-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.4-macOS/PP Article Library.app"
+xattr -dr com.apple.quarantine "$HOME/Downloads/PP-Article-Library-v0.2.5-macOS" && open "$HOME/Downloads/PP-Article-Library-v0.2.5-macOS/PP Article Library.app"
 ```
 
-If the folder is elsewhere, type `xattr -dr com.apple.quarantine ` in Terminal, drag the extracted `PP-Article-Library-v0.2.4-macOS` folder into Terminal, press Enter, then open `PP Article Library.app`.
+If the folder is elsewhere, type `xattr -dr com.apple.quarantine ` in Terminal, drag the extracted `PP-Article-Library-v0.2.5-macOS` folder into Terminal, press Enter, then open `PP Article Library.app`.
 
 The app opens a Terminal progress window. Keep it open while using the workbench; closing it stops the local server.
 
 ### First Launch On Windows
 
-1. Extract `PP-Article-Library-v0.2.4-Windows.zip`.
+1. Extract `PP-Article-Library-v0.2.5-Windows.zip`.
 2. Double-click `Start PP Article Library.bat`.
 3. The launcher checks Python and installs required dependencies.
 4. Your browser opens the local workbench.
